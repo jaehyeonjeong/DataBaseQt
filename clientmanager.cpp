@@ -26,7 +26,7 @@ ClientManager::ClientManager(QWidget *parent) :
 
     /*데이터 보내기*/
     connect(ui->CNameLineEdit, SIGNAL(textChanged(QString)),
-            this, SIGNAL(ClientAdded(QString)));
+            this, SIGNAL(ClientAdded(/*int, */QString)));
 
 
     /*파일 불러오기*/
@@ -44,7 +44,7 @@ ClientManager::ClientManager(QWidget *parent) :
             ui->ClientTreeWidget->addTopLevelItem(c);
             clientList.insert(id, c);
 
-            emit ClientAdded(row[1]);
+            emit ClientAdded(/*id,*/ row[1]);
         }
     }
     file.close( );
@@ -113,7 +113,7 @@ void ClientManager::on_InputButton_clicked()
         Client* c = new Client(id, name, number, address);
         clientList.insert(id, c);
         ui->ClientTreeWidget->addTopLevelItem(c);
-        emit ClientAdded(name);
+        emit ClientAdded(/*id, */name);
     }
 }
 

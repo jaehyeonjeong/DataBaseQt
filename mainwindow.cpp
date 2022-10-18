@@ -6,8 +6,6 @@
 #include "chetting.h"
 #include "tcpclient.h"
 #include "tcpserver.h"
-#include "tcplog.h"
-
 
 #include <QMdiSubWindow>
 
@@ -24,7 +22,7 @@ MainWindow::MainWindow(QWidget *parent)
     //    TCPClient* tcpclient;
     tcpserver = new TCPServer(this);
     tcpclient = new TCPClient(this);
-    logwindow = new tcplog(this);
+    //logwindow = new tcplog(this);
 
     chettingapp = new Chetting(this);
 
@@ -55,7 +53,7 @@ MainWindow::MainWindow(QWidget *parent)
     TcpSubWindow[0]->setAttribute(Qt::WA_DeleteOnClose);
     TcpSubWindow[0]->setWindowTitle("TcpServer");
     ui->mdiArea->addSubWindow(TcpSubWindow[0]);
-    TcpSubWindow[0]->setGeometry(450,0, 340, 100);
+    TcpSubWindow[0]->setGeometry(450,0, 340, 400);
 
     TcpSubWindow[1] = new QMdiSubWindow;
     TcpSubWindow[1]->setWidget(tcpclient);
@@ -71,12 +69,12 @@ MainWindow::MainWindow(QWidget *parent)
     ui->mdiArea->addSubWindow(TcpSubWindow[2]);
     TcpSubWindow[2]->setGeometry(300, 400, 490, 360);
 
-    TcpSubWindow[3] = new QMdiSubWindow;
-    TcpSubWindow[3]->setWidget(logwindow);
-    TcpSubWindow[3]->setAttribute(Qt::WA_DeleteOnClose);
-    TcpSubWindow[3]->setWindowTitle("chetting log Window");
-    ui->mdiArea->addSubWindow(TcpSubWindow[3]);
-    TcpSubWindow[3]->setGeometry(450, 100, 340, 300);
+//    TcpSubWindow[3] = new QMdiSubWindow;
+//    TcpSubWindow[3]->setWidget(logwindow);
+//    TcpSubWindow[3]->setAttribute(Qt::WA_DeleteOnClose);
+//    TcpSubWindow[3]->setWindowTitle("chetting log Window");
+//    ui->mdiArea->addSubWindow(TcpSubWindow[3]);
+//    TcpSubWindow[3]->setGeometry(450, 100, 340, 300);
 
 
     /*탭과 MDIAREA 스핀로드*/
@@ -85,8 +83,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->splitter->setSizes(list);
 
     /*메인윈도우에서 데이터 커넥트*/
-    connect(clientmanager, SIGNAL(ClientAdded(QString)),
-            shoppingmanager, SLOT(CreceiveData(QString)));
+    connect(clientmanager, SIGNAL(ClientAdded(/*int,*/ QString)),
+            shoppingmanager, SLOT(CreceiveData(/*int,*/ QString)));
 
     connect(productmanager, SIGNAL(ProductAdded(QString)),
             shoppingmanager, SLOT(PreceiveData(QString)));
@@ -100,7 +98,7 @@ MainWindow::MainWindow(QWidget *parent)
     //            &QAbstractSocket::errorOccurred,
     //            [=]{qDebug() << chettingapp->clientsocket->errorString();
     //    });
-    //    connect(chettingapp->clientsocket, SIGNAL(readyRead()), SLOT(rechoData()));
+    //connect(chettingapp, SIGNAL(readyRead()), SLOT(sendData()));
 
     connect(clientmanager, SIGNAL(ClientAdded(QString)),
             tcpclient, SLOT(CReceiveData(QString)));
@@ -119,9 +117,7 @@ MainWindow::~MainWindow()
     delete productmanager;
     delete shoppingmanager;
 
-    delete tcpclient;
-    delete tcpserver;
-    delete logwindow;
+//    delete logwindow;
 
 //    for(int i = 0; i < 4; i++)
 //    {

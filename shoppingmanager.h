@@ -23,7 +23,7 @@ public slots:
     void on_ShoppingTreeWidget_itemClicked(QTreeWidgetItem *item, int column);
     void showContextMenu(const QPoint&);
     void removeItem();
-    void CreceiveData(QString str);
+    void CreceiveData(/*int, */QString str);
     void PreceiveData(QString str);
     void PreceivePrice(QString price);
     void on_InputButton_clicked();

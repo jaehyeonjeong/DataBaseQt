@@ -22,7 +22,7 @@ public:
    // QString getClientName();
 
 signals:
-    void ClientAdded(QString);
+    void ClientAdded(/*int,*/ QString);
 
 private slots:
     void on_ClientTreeWidget_itemClicked(QTreeWidgetItem *item, int column);        /*clientTreeWidget의 커서를 불러오는 슬롯*/

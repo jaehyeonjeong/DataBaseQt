@@ -11,8 +11,21 @@ class QTcpServer;
 class QTreeWidgetItem;
 class QListWidgetItem;
 
+typedef enum {          /*chat state*/
+    Chat_Login,     //로그인           -->초대를 위한 정보 저장
+    Chat_In,        //채팅방 입장
+    Chat_Talk,      //채팅
+    Chat_Close,     //채팅방 입장        --> 초대 가능
+    Chat_LogOut,    //로그 아웃 서버     --> 초대 불가능
+    Chat_Invite,    //초대
+    Chat_KickOut,   //강제퇴장
+    Chat_FileTrasform_Start,    //파일전송시작 --> 파일오픈
+    Chat_FileTransform,         //파일전송
+    Chat_FileTrasform_End,      //파일전송해제 --> 파일닫기
+} StatusOfChat;
+
 typedef struct{
-    int type;
+    StatusOfChat type;
     char data[1020];
 }chattingProtocol;
 
@@ -42,11 +55,9 @@ private slots:
     void disconnect( );
 
     /*tcp client로 받는 데이터를 리시브 할 수 있는 코그*/
-    void receiveTCPClientName(QString name);
+    void receiveTCPClientName(/*int id,*/ QString);
 
-    void on_reduceclient_clicked();
-
-    void receiveClient(QString);
+    void receiveClient(/*int,*/ QString);
 
     void on_listWidget_itemClicked(QListWidgetItem *item);
 

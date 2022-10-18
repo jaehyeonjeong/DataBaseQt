@@ -43,12 +43,12 @@ private:
 
     TCPServer* tcpserver;
     TCPClient* tcpclient;
-    tcplog* logwindow;
+    //tcplog* logwindow;
 
     Chetting* chettingapp;
 
     QMdiSubWindow* subWindow;
-    QMdiSubWindow* TcpSubWindow[4];
+    QMdiSubWindow* TcpSubWindow[3];
 
 
 
