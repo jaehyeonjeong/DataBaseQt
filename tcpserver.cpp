@@ -121,14 +121,14 @@ void TCPServer::receiveData( )
         break;
     case Server_Chat_Close:
         foreach(auto item, ui->treeWidget->findItems(name, Qt::MatchContains, 1)) {
-            if(item->text(1) == "O") {
+            if(item->text(0) == "O") {
                 item->setText(0, "X");
             }
         }
         break;
     case Server_Chat_LogOut:
         foreach(auto item, ui->treeWidget->findItems(name, Qt::MatchContains, 1)) {
-            if(item->text(1) == "O") {
+            if(item->text(0) == "O") {
                 item->setText(0, "X");
                 clientList.removeOne(clientConnection);        // QList<QTcpSocket*> clientList;
             }
@@ -154,6 +154,33 @@ void TCPServer::removeClient()
 void TCPServer::addClient(int id, QString name)
 {
     clientIDList << id;
+    QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeWidget);
+    item->setText(0, "X");
+    item->setText(1, name);
+    ui->treeWidget->addTopLevelItem(item);
+    clientIDHash[name] = id;
+    ui->treeWidget->resizeColumnToContents(0);
+}
+
+void TCPServer::removeClient(int id)
+{
+    qDebug() << id;
+    ui->treeWidget->takeTopLevelItem(id);
+}
+
+void TCPServer::modifyClient(QString name, int index)
+{
+    ui->treeWidget->takeTopLevelItem(index);
+    QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeWidget);
+    item->setText(0, "X");
+    item->setText(1, name);
+    ui->treeWidget->addTopLevelItem(item);
+    //clientIDHash[name] = id;
+    ui->treeWidget->resizeColumnToContents(0);
+}
+
+void TCPServer::receiveManager(int id, QString name)
+{
     QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeWidget);
     item->setText(0, "X");
     item->setText(1, name);

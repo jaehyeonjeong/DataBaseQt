@@ -35,6 +35,10 @@ public:
     //    QMdiSubWindow *subWindow2 =
     //        mdiArea.addSubWindow(internalWidget2);
 
+
+private slots:
+    void on_actionchatting_triggered();
+
 private:
     Ui::MainWindow *ui;
     ClientManager* clientmanager;

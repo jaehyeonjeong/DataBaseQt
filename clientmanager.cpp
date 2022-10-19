@@ -26,9 +26,13 @@ ClientManager::ClientManager(QWidget *parent) :
 
     /*데이터 보내기*/
     connect(ui->CNameLineEdit, SIGNAL(textChanged(QString)),
-            this, SIGNAL(ClientAdded(/*int, */QString)));
+            this, SIGNAL(ClientAdded(QString)));
 
+    //connect(this, SIGNAL(TCPClientAdded(int,QString)), this, SLOT(loadData()));
+}
 
+void ClientManager::loadData()
+{
     /*파일 불러오기*/
     QFile file("clientlist.txt");
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -43,8 +47,8 @@ ClientManager::ClientManager(QWidget *parent) :
             Client* c = new Client(id, row[1], row[2], row[3]);
             ui->ClientTreeWidget->addTopLevelItem(c);
             clientList.insert(id, c);
-
-            emit ClientAdded(/*id,*/ row[1]);
+            emit TCPClientAdded(id, row[1]);
+            emit ClientAdded(row[1]);
         }
     }
     file.close( );
@@ -65,6 +69,7 @@ ClientManager::~ClientManager()
         out << c->id() << ", " << c->getName() << ", ";
         out << c->getPhoneNumber() << ", ";
         out << c->getAddress() << "\n";
+//        emit TCPClientAdded(c->id(), c->getName());
     }
     file.close( );
 }
@@ -88,10 +93,12 @@ void ClientManager::removeItem()
 {
     QTreeWidgetItem* item = ui->ClientTreeWidget->currentItem();
     if(item != nullptr) {
+        int index = ui->ClientTreeWidget->currentIndex().row();
         clientList.remove(item->text(0).toInt());
         ui->ClientTreeWidget->takeTopLevelItem
                 (ui->ClientTreeWidget->indexOfTopLevelItem(item));
         ui->ClientTreeWidget->update();
+        emit ClientRemove(index);
     }
 }
 
@@ -113,7 +120,8 @@ void ClientManager::on_InputButton_clicked()
         Client* c = new Client(id, name, number, address);
         clientList.insert(id, c);
         ui->ClientTreeWidget->addTopLevelItem(c);
-        emit ClientAdded(/*id, */name);
+        emit TCPClientAdded(id, name);
+        emit ClientAdded(name);
     }
 }
 
@@ -130,6 +138,7 @@ void ClientManager::on_ModifyButton_clicked()
 {
     QTreeWidgetItem* item = ui->ClientTreeWidget->currentItem();
     if(item != nullptr) {
+        int index = ui->ClientTreeWidget->currentIndex().row();
         int key = item->text(0).toInt();
         Client* c = clientList[key];
         QString name, number, address;
@@ -140,6 +149,7 @@ void ClientManager::on_ModifyButton_clicked()
         c->setPhoneNumber(number);
         c->setAddress(address);
         clientList[key] = c;
+        emit TCPClientModify(name, index);
     }
 }
 
@@ -153,6 +163,7 @@ void ClientManager::on_ClientTreeWidget_itemClicked(QTreeWidgetItem *item, int c
     ui->CEmailLineEdit->setText(item->text(3));
 
     ui->toolBox->setCurrentIndex(0);
+    //emit TCPClientAdded(item->text(0).toInt(), item->text(1));
 }
 
 

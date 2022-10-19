@@ -88,7 +88,7 @@ TCPClient::TCPClient(QWidget *parent) : QWidget(parent) {
 
     // 종료 기능
     QPushButton* quitButton = new QPushButton("Quit", this);
-    connect(quitButton, SIGNAL(clicked( )), qApp, SLOT(quit( )));
+    connect(quitButton, SIGNAL(clicked( )), this, SLOT(close()));
 
     QHBoxLayout *buttonLayout = new QHBoxLayout;
     buttonLayout->addStretch(1);

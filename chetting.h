@@ -42,6 +42,9 @@ public:
 
     ~Chetting();
 
+signals:
+    void TCPSignal(int, QString);
+
 private slots:
     /*server slots*/
     void clientConnect();
@@ -55,11 +58,12 @@ private slots:
     void disconnect( );
 
     /*tcp client로 받는 데이터를 리시브 할 수 있는 코그*/
-    void receiveTCPClientName(/*int id,*/ QString);
+    void receiveTCPClientName(QString);
 
-    void receiveClient(/*int,*/ QString);
+    void receiveClient(QString);
 
-    void on_listWidget_itemClicked(QListWidgetItem *item);
+
+    //void on_listWidget_itemClicked(QListWidgetItem *item);
 
 private:
     void closeEvent(QCloseEvent*) override;

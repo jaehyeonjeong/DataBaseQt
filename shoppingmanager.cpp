@@ -74,7 +74,7 @@ ShoppingManager::~ShoppingManager()
     file.close( );
 }
 
-void ShoppingManager::CreceiveData(/*int id,*/ QString str)
+void ShoppingManager::CreceiveData( QString str)
 {
     ui->ClientLineEdit->setText(str);
 }

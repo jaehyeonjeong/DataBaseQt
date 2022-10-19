@@ -50,7 +50,13 @@ private slots:
 //    void echoData();
 //    void removeItem();
     void removeClient( );
+
+    /*클라이언트 데이터가 추가, 삭제, 수정 될때마다 서버의 클라이언트 리스트가 바뀜*/
     void addClient(int, QString);
+    void removeClient(int);
+    void modifyClient(QString, int);
+
+    void receiveManager(int, QString);
     void inviteClient();
     void kickOut();
     //void on_clientTreeWidget_customContextMenuRequested(const QPoint &pos);

@@ -20,14 +20,21 @@ public:
     explicit ClientManager(QWidget *parent = nullptr);
     ~ClientManager();
    // QString getClientName();
+    void loadData();
+
 
 signals:
-    void ClientAdded(/*int,*/ QString);
+    void ClientAdded(QString);
+    void ClientRemove(int);
+    void TCPClientModify(QString, int);
+    void TCPClientAdded(int, QString);
+
 
 private slots:
     void on_ClientTreeWidget_itemClicked(QTreeWidgetItem *item, int column);        /*clientTreeWidget의 커서를 불러오는 슬롯*/
     void showContextMenu(const QPoint &);                                           /*마우스의 좌표에 따른 호출 슬롯*/
-    void removeItem();                                                              /*고객 정보 제거 슬롯*/
+    void removeItem();   /*고객 정보 제거 슬롯*/
+
     void on_InputButton_clicked();                                                  /*고객 정보 추가 버튼 슬롯*/
     void on_CancelButton_clicked();                                                 /*고객 정보 추가 취소 버튼 슬롯*/
     void on_ModifyButton_clicked();                                                 /*고객 정보 수정 버튼 슬롯*/

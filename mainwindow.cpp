@@ -44,7 +44,9 @@ MainWindow::MainWindow(QWidget *parent)
     subWindow->setWidget(shoppingmanager);
     subWindow->setAttribute(Qt::WA_DeleteOnClose);
     subWindow->setWindowTitle("Shopping Window");
-    subWindow->setGeometry(0, 0, 450, 400);
+    subWindow->setGeometry(0, 0, 800, 400);
+    subWindow->setWindowFlags(/*Qt::WindowTitleHint|Qt::WindowMinimizeButtonHint*/
+                              Qt::FramelessWindowHint);
     ui->mdiArea->addSubWindow(subWindow);
 
     /*TCP 채팅 위젯 추가*/
@@ -52,22 +54,28 @@ MainWindow::MainWindow(QWidget *parent)
     TcpSubWindow[0]->setWidget(tcpserver);
     TcpSubWindow[0]->setAttribute(Qt::WA_DeleteOnClose);
     TcpSubWindow[0]->setWindowTitle("TcpServer");
+    TcpSubWindow[0]->setWindowFlags(/*Qt::WindowTitleHint|Qt::WindowMinimizeButtonHint*/
+                              Qt::FramelessWindowHint);
     ui->mdiArea->addSubWindow(TcpSubWindow[0]);
-    TcpSubWindow[0]->setGeometry(450,0, 340, 400);
+    TcpSubWindow[0]->setGeometry(0, 400, 450, 360);
 
     TcpSubWindow[1] = new QMdiSubWindow;
     TcpSubWindow[1]->setWidget(tcpclient);
     TcpSubWindow[1]->setAttribute(Qt::WA_DeleteOnClose);
     TcpSubWindow[1]->setWindowTitle("client chetting");
+    TcpSubWindow[1]->setWindowFlags(Qt::WindowTitleHint|Qt::WindowMinimizeButtonHint
+                              /*Qt::FramelessWindowHint*/);
     ui->mdiArea->addSubWindow(TcpSubWindow[1]);
-    TcpSubWindow[1]->setGeometry(0, 400, 300, 360);
+    TcpSubWindow[1]->setGeometry(800, 0, 340, 380);
 
     TcpSubWindow[2] = new QMdiSubWindow;
     TcpSubWindow[2]->setWidget(chettingapp);
     TcpSubWindow[2]->setAttribute(Qt::WA_DeleteOnClose);
     TcpSubWindow[2]->setWindowTitle("manager Chetting Application");
+    TcpSubWindow[2]->setWindowFlags(/*Qt::WindowTitleHint|Qt::WindowMinimizeButtonHint*/
+                              Qt::FramelessWindowHint);
     ui->mdiArea->addSubWindow(TcpSubWindow[2]);
-    TcpSubWindow[2]->setGeometry(300, 400, 490, 360);
+    TcpSubWindow[2]->setGeometry(450, 390, 340, 370);
 
 //    TcpSubWindow[3] = new QMdiSubWindow;
 //    TcpSubWindow[3]->setWidget(logwindow);
@@ -83,8 +91,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->splitter->setSizes(list);
 
     /*메인윈도우에서 데이터 커넥트*/
-    connect(clientmanager, SIGNAL(ClientAdded(/*int,*/ QString)),
-            shoppingmanager, SLOT(CreceiveData(/*int,*/ QString)));
+    connect(clientmanager, SIGNAL(ClientAdded(QString)),
+            shoppingmanager, SLOT(CreceiveData(QString)));
 
     connect(productmanager, SIGNAL(ProductAdded(QString)),
             shoppingmanager, SLOT(PreceiveData(QString)));
@@ -92,7 +100,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(productmanager, SIGNAL(ProductPrices(QString)),
             shoppingmanager, SLOT(PreceivePrice(QString)));
 
-    this->resize(1500, 800);
+    this->resize(1500, 840);
 
     //    connect(chettingapp->clientsocket,
     //            &QAbstractSocket::errorOccurred,
@@ -103,11 +111,19 @@ MainWindow::MainWindow(QWidget *parent)
     connect(clientmanager, SIGNAL(ClientAdded(QString)),
             tcpclient, SLOT(CReceiveData(QString)));
 
-    connect(tcpclient, SIGNAL(ButtonSignal(QString)),
-            chettingapp, SLOT(receiveClient(QString)));
+    connect(clientmanager, SIGNAL(TCPClientAdded(int, QString)),
+            tcpserver, SLOT(addClient(int, QString)));
+    clientmanager->loadData();
 
-    connect(tcpclient, SIGNAL(ButtonSignal(QString)),
-            chettingapp, SLOT(receiveTCPClientName(QString)));
+    connect(chettingapp, SIGNAL(TCPSignal(int, QString)),
+            tcpserver, SLOT(receiveManager(int, QString)));
+
+    connect(clientmanager, SIGNAL(ClientRemove(int)),
+            tcpserver, SLOT(removeClient(int)));
+
+    connect(clientmanager, SIGNAL(TCPClientModify(QString,int)),
+            tcpserver, SLOT(modifyClient(QString,int)));
+
 }
 
 MainWindow::~MainWindow()
@@ -117,12 +133,25 @@ MainWindow::~MainWindow()
     delete productmanager;
     delete shoppingmanager;
 
+    delete tcpserver;
+    delete tcpclient;
+    delete chettingapp;
+
 //    delete logwindow;
 
-//    for(int i = 0; i < 4; i++)
-//    {
-//        delete TcpSubWindow[i];
-//    }
-    delete *TcpSubWindow;
+    for(int i = 0; i < 4; i++)
+    {
+        delete TcpSubWindow[i];
+    }
+}
+
+
+
+void MainWindow::on_actionchatting_triggered()
+{
+    qDebug(".......");
+    tcpclient = new TCPClient;
+    tcpclient->setWindowFlag(Qt::WindowStaysOnTopHint);
+    tcpclient->show();
 }
 

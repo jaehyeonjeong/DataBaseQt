@@ -39,6 +39,7 @@ public:
 
 signals:
     void ButtonSignal(QString);
+    //void TCPSignal(int, QString);
 
 private slots:
     void connectToServer( );
@@ -47,6 +48,7 @@ private slots:
     void disconnect( );
 
     void CReceiveData(QString);
+    //void TCPReceiveData(int, QString);
 private:
     const int BLOCK_SIZE = 1024;
     void closeEvent(QCloseEvent*) override;     /*이벤트 헨들러 사용*/
