@@ -1,6 +1,6 @@
 QT       += core gui
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets network core
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets network
 
 CONFIG += c++17
 
@@ -12,6 +12,7 @@ SOURCES += \
     chetting.cpp \
     client.cpp \
     clientmanager.cpp \
+    logthread.cpp \
     main.cpp \
     mainwindow.cpp \
     product.cpp \
@@ -25,6 +26,7 @@ HEADERS += \
     chetting.h \
     client.h \
     clientmanager.h \
+    logthread.h \
     mainwindow.h \
     product.h \
     productmanager.h \

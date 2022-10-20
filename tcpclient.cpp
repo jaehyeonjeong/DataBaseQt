@@ -1,4 +1,4 @@
-#include "tcpclient.h"
+﻿#include "tcpclient.h".h"
 
 #include <QTextEdit>
 #include <QLineEdit>
@@ -12,15 +12,20 @@
 #include <QThread>
 #include <QMessageBox>
 #include <QSettings>
+#include <QFileDialog>
+#include <QFile>
+#include <QFileInfo>
+#include <QProgressDialog>
 
-TCPClient::TCPClient(QWidget *parent) : QWidget(parent) {
+#define BLOCK_SIZE      1024
+
+TCPClient::TCPClient(QWidget *parent) : QWidget(parent), isSent(false) {
     // 연결한 서버 정보 입력을 위한 위젯들
     name = new QLineEdit(this);
-//    IDNumber = new QLineEdit(this);
 
-    QLineEdit* serverAddress = new QLineEdit(this);
+    serverAddress = new QLineEdit(this);
     serverAddress->setText("127.0.0.1");
-    //    serverAddress->setInputMask("999.999.999.999;_");
+    //serverAddress->setInputMask("999.999.999.999;_");
     QRegularExpression re("^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
                           "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
                           "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
@@ -29,40 +34,13 @@ TCPClient::TCPClient(QWidget *parent) : QWidget(parent) {
     serverAddress->setPlaceholderText("Server IP Address");
     serverAddress->setValidator(&validator);
 
-    QLineEdit* serverPort = new QLineEdit(this);
-    serverPort->setText("8000");
+    serverPort = new QLineEdit(this);
+    serverPort->setText(QString::number(PORT_NUMBER));
     serverPort->setInputMask("00000;_");
     serverPort->setPlaceholderText("Server Port No");
 
     connectButton = new QPushButton(tr("Log In"), this);
-    connect(connectButton, &QPushButton::clicked,
-            [=]{
-        if(connectButton->text() == tr("Log In")) {
-            clientSocket->connectToHost(serverAddress->text( ),
-                                                 serverPort->text( ).toInt( ));
-            connectToServer( );
-            connectButton->setText(tr("Chat in"));
-        } else {
-            QByteArray bytearray;
-            TCPProtocolType data;  //구조체를 채우고
-            data.type = TCPChat_In;          /*Chat_In으로 타입 전환*/
-            qstrcpy(data.data, name->text().toStdString().data());/*이름 찾기*/
-
-            QByteArray sendArray;           /*소켓으로 보낼 데이터를 채움*/
-            QDataStream out(&sendArray, QIODevice::WriteOnly);
-            out << data.type;
-            out.writeRawData(data.data, 1020);
-            clientSocket->write(sendArray);     /*서버로 전송*/
-        }
-        connectButton->setDisabled(true);
-        inputLine->setEnabled(true);
-        sentButton->setEnabled(true);
-    } );
-
-
-
     QHBoxLayout *serverLayout = new QHBoxLayout;
-    //serverLayout->addWidget(IDNumber);
     serverLayout->addWidget(name);
     serverLayout->addStretch(1);
     serverLayout->addWidget(serverAddress);
@@ -86,11 +64,16 @@ TCPClient::TCPClient(QWidget *parent) : QWidget(parent) {
     inputLayout->addWidget(inputLine);
     inputLayout->addWidget(sentButton);
 
+    fileButton = new QPushButton("File Transfer", this);
+    connect(fileButton, SIGNAL(clicked( )), SLOT(sendFile( )));
+    fileButton->setDisabled(true);
+
     // 종료 기능
-    QPushButton* quitButton = new QPushButton("Quit", this);
-    connect(quitButton, SIGNAL(clicked( )), this, SLOT(close()));
+    QPushButton* quitButton = new QPushButton("Log Out", this);
+    connect(quitButton, SIGNAL(clicked( )), this, SLOT(close( )));
 
     QHBoxLayout *buttonLayout = new QHBoxLayout;
+    buttonLayout->addWidget(fileButton);
     buttonLayout->addStretch(1);
     buttonLayout->addWidget(quitButton);
 
@@ -107,35 +90,57 @@ TCPClient::TCPClient(QWidget *parent) : QWidget(parent) {
             [=]{ qDebug( ) << clientSocket->errorString( ); });
     connect(clientSocket, SIGNAL(readyRead( )), SLOT(receiveData( )));
     connect(clientSocket, SIGNAL(disconnected( )), SLOT(disconnect( )));
-    setWindowTitle(tr("Chat Client"));
-    /*간단한정보를 종료되는 순간 소멸자에서 현재 네임에디트를 저장*/
+
     QSettings settings("ChatClient", "Chat Client");
     name->setText(settings.value("ChatClient/ID").toString());
+
+    fileClient = new QTcpSocket(this);
+    connect(fileClient, SIGNAL(bytesWritten(qint64)), SLOT(goOnSend(qint64)));
+
+    progressDialog = new QProgressDialog(0);
+    progressDialog->setAutoClose(true);
+    progressDialog->reset();
+
+    connect(connectButton, &QPushButton::clicked,
+            [=]{
+        if(connectButton->text() == tr("Log In")) {
+            clientSocket->connectToHost(serverAddress->text( ),
+                                        serverPort->text( ).toInt( ));
+            clientSocket->waitForConnected();
+            sendProtocol(Client_Chat_Login, name->text().toStdString().data());
+            connectButton->setText(tr("Chat in"));
+            name->setReadOnly(true);
+        } else if(connectButton->text() == tr("Chat in"))  {
+            sendProtocol(Client_Chat_In, name->text().toStdString().data());
+            connectButton->setText(tr("Chat Out"));
+            inputLine->setEnabled(true);
+            sentButton->setEnabled(true);
+            fileButton->setEnabled(true);
+        } else if(connectButton->text() == tr("Chat Out"))  {
+            sendProtocol(Client_Chat_Out, name->text().toStdString().data());
+            connectButton->setText(tr("Chat in"));
+            inputLine->setDisabled(true);
+            sentButton->setDisabled(true);
+            fileButton->setDisabled(true);
+        }
+    } );
+
+    setWindowTitle(tr("Chat Client"));
 }
 
 TCPClient::~TCPClient( )
 {
     clientSocket->close( );
-    /*간단한정보를 종료되는 순간 소멸자에서 현재 네임에디트를 저장*/
     QSettings settings("ChatClient", "Chat Client");
     settings.setValue("ChatClient/ID", name->text());
 }
 
 void TCPClient::closeEvent(QCloseEvent*)
 {
-    TCPProtocolType data;
-    data.type = TCPChat_LogOut;
-    qstrcpy(data.data, name->text().toStdString().data());
-
-    QByteArray sendArray;
-    QDataStream out(&sendArray, QIODevice::WriteOnly);
-    out << data.type;
-    out.writeRawData(data.data, 1020);
-    clientSocket->write(sendArray);
-
+    sendProtocol(Client_Chat_LogOut, name->text().toStdString().data());
     clientSocket->disconnectFromHost();
-    while(clientSocket->waitForDisconnected(1000))
-        QThread::usleep(10);
+    if(clientSocket->state() != QAbstractSocket::UnconnectedState)
+        clientSocket->waitForDisconnected();
 }
 
 void TCPClient::receiveData( )
@@ -143,34 +148,65 @@ void TCPClient::receiveData( )
     QTcpSocket *clientSocket = dynamic_cast<QTcpSocket *>(sender( ));
     if (clientSocket->bytesAvailable( ) > BLOCK_SIZE) return;
     QByteArray bytearray = clientSocket->read(BLOCK_SIZE);
-    TCPProtocolType data;
-    QDataStream in(&bytearray, QIODevice::ReadOnly);
-    in >> data.type;
-    in.readRawData(data.data, 1020);
 
-    qDebug( ) << data.type;
-    switch(data.type) {
-    case TCPChat_Talk:
-        message->append(QString(data.data));
-        break;
+    Client_Chat type;       // 채팅의 목적
+    char data[1020];        // 전송되는 메시지/데이터
+    memset(data, 0, 1020);
+
+    QDataStream in(&bytearray, QIODevice::ReadOnly);
+    in.device()->seek(0);
+    in >> type;
+    in.readRawData(data, 1020);
+
+    switch(type) {
+    case Client_Chat_Talk:
+        message->append(QString(data));
         inputLine->setEnabled(true);
         sentButton->setEnabled(true);
-        connectButton->setDisabled(true);
-    case TCPChat_KickOut:
+        fileButton->setEnabled(true);
+        connectButton->setText("Chat Out");
+        break;
+    case Client_Chat_KickOut:
         QMessageBox::critical(this, tr("Chatting Client"), \
                               tr("Kick out from Server"));
-        inputLine->setEnabled(false);
-        sentButton->setEnabled(false);
-        connectButton->setEnabled(true);
+        inputLine->setDisabled(true);
+        sentButton->setDisabled(true);
+        fileButton->setDisabled(true);
+        connectButton->setText("Chat in");
+        name->setReadOnly(false);
         break;
-    case TCPChat_Invite:
+    case Client_Chat_Invite:
         QMessageBox::information(this, tr("Chatting Client"), \
                               tr("Invited from Server"));
         inputLine->setEnabled(true);
         sentButton->setEnabled(true);
-        connectButton->setDisabled(true);
+        fileButton->setEnabled(true);
+        connectButton->setText("Chat Out");
+        name->setReadOnly(true);
         break;
     };
+}
+
+void TCPClient::disconnect( )
+{
+    QMessageBox::critical(this, tr("Chatting Client"), \
+                          tr("Disconnect from Server"));
+    inputLine->setEnabled(false);
+    name->setReadOnly(false);
+    sentButton->setEnabled(false);
+    connectButton->setText(tr("Log in"));
+}
+
+void TCPClient::sendProtocol(Client_Chat type, char* data, int size)
+{
+    QByteArray dataArray;           // 소켓으로 보낼 데이터를 채우고
+    QDataStream out(&dataArray, QIODevice::WriteOnly);
+    out.device()->seek(0);
+    out << type;
+    out.writeRawData(data, size);
+    clientSocket->write(dataArray);     // 서버로 전송
+    clientSocket->flush();
+    while(clientSocket->waitForBytesWritten());
 }
 
 void TCPClient::sendData(  )
@@ -180,54 +216,64 @@ void TCPClient::sendData(  )
         QByteArray bytearray;
         bytearray = str.toUtf8( );
         message->append("<font color=red>나</font> : " + str);
-
-        TCPProtocolType data;
-        data.type = TCPChat_Talk;
-        qstrcpy(data.data, bytearray.data());
-
-        QByteArray sendArray;
-        QDataStream out(&sendArray, QIODevice::WriteOnly);
-        out << data.type;
-        out.writeRawData(data.data, 1020);
-        clientSocket->write(sendArray);
+        sendProtocol(Client_Chat_Talk, bytearray.data());
     }
 }
 
-void TCPClient::connectToServer( )
+void TCPClient::goOnSend(qint64 numBytes) // Start sending file content
 {
-    TCPProtocolType data;
-    data.type = TCPChat_Login;
-    qstrcpy(data.data, name->text().toStdString().data());
+    byteToWrite -= numBytes; // Remaining data size
+    outBlock = file->read(qMin(byteToWrite, numBytes));
+    fileClient->write(outBlock);
 
-    QByteArray sendArray;
-    QDataStream out(&sendArray, QIODevice::WriteOnly);
-    out << data.type;
-    out.writeRawData(data.data, 1020);
-    clientSocket->write(sendArray);
+    progressDialog->setMaximum(totalSize);
+    progressDialog->setValue(totalSize-byteToWrite);
 
-    emit ButtonSignal(/*IDNumber->text().toInt(),*/
-                      name->text().toStdString().data());
+    if (byteToWrite == 0) { // Send completed
+        qDebug("File sending completed!");
+        progressDialog->reset();
+    }
 }
 
-void TCPClient::disconnect( )
+void TCPClient::sendFile() // Open the file and get the file name (including path)
 {
-    QMessageBox::critical(this, tr("Chatting Client"), \
-                          tr("Disconnect from Server"));
-    inputLine->setEnabled(false);
-    sentButton->setEnabled(false);
-//    close( );
-}
+    loadSize = 0;
+    byteToWrite = 0;
+    totalSize = 0;
+    outBlock.clear();
 
-void TCPClient::CReceiveData(/*int id,*/ QString name)
-{
-//    QString ID;
+    QString filename = QFileDialog::getOpenFileName(this);
+    file = new QFile(filename);
+    file->open(QFile::ReadOnly);
 
-//    QString a;
-//    int b = 10;
+    qDebug() << QString("file %1 is opened").arg(filename);
+    progressDialog->setValue(0); // Not sent for the first time
 
-//    a = a.setNum(b);
+    if (!isSent) { // Only the first time it is sent, it happens when the connection generates the signal connect
+        fileClient->connectToHost(serverAddress->text( ),
+                                  serverPort->text( ).toInt( ) + 1);
+        isSent = true;
+    }
 
-//    ID = ID.setNum(id);
-//    IDNumber->setText(ID);
-    this->name->setText(name);
+    // When sending for the first time, connectToHost initiates the connect signal to call send, and you need to call send after the second time
+
+    byteToWrite = totalSize = file->size(); // The size of the remaining data
+    loadSize = 1024; // The size of data sent each time
+
+    QDataStream out(&outBlock, QIODevice::WriteOnly);
+    out << qint64(0) << qint64(0) << filename;
+
+    totalSize += outBlock.size(); // The total size is the file size plus the size of the file name and other information
+    byteToWrite += outBlock.size();
+
+    out.device()->seek(0); // Go back to the beginning of the byte stream to write a qint64 in front, which is the total size and file name and other information size
+    out << totalSize << qint64(outBlock.size());
+
+    fileClient->write(outBlock); // Send the read file to the socket
+
+    progressDialog->setMaximum(totalSize);
+    progressDialog->setValue(totalSize-byteToWrite);
+    progressDialog->show();
+
+    qDebug() << QString("Sending file %1").arg(filename);
 }

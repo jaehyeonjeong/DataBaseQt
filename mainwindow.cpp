@@ -40,6 +40,7 @@ MainWindow::MainWindow(QWidget *parent)
     //    QMdiSubWindow *subWindow2 =
     //        mdiArea.addSubWindow(internalWidget2);
 
+    /*쇼핑리스트를 보여주는 토드*/
     subWindow = new QMdiSubWindow;
     subWindow->setWidget(shoppingmanager);
     subWindow->setAttribute(Qt::WA_DeleteOnClose);
@@ -49,7 +50,7 @@ MainWindow::MainWindow(QWidget *parent)
                               Qt::FramelessWindowHint);
     ui->mdiArea->addSubWindow(subWindow);
 
-    /*TCP 채팅 위젯 추가*/
+    /*TCP 서버와 로그 상태를 담당하는 윈도우*/
     TcpSubWindow[0] = new QMdiSubWindow;
     TcpSubWindow[0]->setWidget(tcpserver);
     TcpSubWindow[0]->setAttribute(Qt::WA_DeleteOnClose);
@@ -59,6 +60,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->mdiArea->addSubWindow(TcpSubWindow[0]);
     TcpSubWindow[0]->setGeometry(0, 400, 450, 360);
 
+    /*고객 윈도우 그러나 프로젝트를 출력하면 보이지 않음*/
     TcpSubWindow[1] = new QMdiSubWindow;
     TcpSubWindow[1]->setWidget(tcpclient);
     TcpSubWindow[1]->setAttribute(Qt::WA_DeleteOnClose);
@@ -68,6 +70,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->mdiArea->addSubWindow(TcpSubWindow[1]);
     TcpSubWindow[1]->setGeometry(800, 0, 340, 380);
 
+    /*관리자 채팅을 보여주는 코드*/
     TcpSubWindow[2] = new QMdiSubWindow;
     TcpSubWindow[2]->setWidget(chettingapp);
     TcpSubWindow[2]->setAttribute(Qt::WA_DeleteOnClose);
@@ -108,9 +111,6 @@ MainWindow::MainWindow(QWidget *parent)
     //    });
     //connect(chettingapp, SIGNAL(readyRead()), SLOT(sendData()));
 
-    connect(clientmanager, SIGNAL(ClientAdded(QString)),
-            tcpclient, SLOT(CReceiveData(QString)));
-
     connect(clientmanager, SIGNAL(TCPClientAdded(int, QString)),
             tcpserver, SLOT(addClient(int, QString)));
     clientmanager->loadData();
@@ -118,35 +118,21 @@ MainWindow::MainWindow(QWidget *parent)
     connect(chettingapp, SIGNAL(TCPSignal(int, QString)),
             tcpserver, SLOT(receiveManager(int, QString)));
 
-    connect(clientmanager, SIGNAL(ClientRemove(int)),
-            tcpserver, SLOT(removeClient(int)));
+//    connect(clientmanager, SIGNAL(ClientRemove(int)),
+//            tcpserver, SLOT(removeClient(int)));
 
-    connect(clientmanager, SIGNAL(TCPClientModify(QString,int)),
-            tcpserver, SLOT(modifyClient(QString,int)));
+//    connect(clientmanager, SIGNAL(TCPClientModify(QString,int)),
+//            tcpserver, SLOT(modifyClient(QString,int)));
 
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
-    delete clientmanager;
-    delete productmanager;
-    delete shoppingmanager;
-
-    delete tcpserver;
-    delete tcpclient;
-    delete chettingapp;
-
-//    delete logwindow;
-
-    for(int i = 0; i < 4; i++)
-    {
-        delete TcpSubWindow[i];
-    }
 }
 
 
-
+/*클라이언트용 채팅활성화 chetting 툴바 버튼 클릭시 프로젝트 맨앞에서 출력*/
 void MainWindow::on_actionchatting_triggered()
 {
     qDebug(".......");
