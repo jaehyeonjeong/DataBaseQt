@@ -111,6 +111,10 @@ private:
     /*1020 코드수정*/
     QByteArray inBlock;
     LogThread* logThread;
+
+    /*받아오는 이름과 아이디*/
+    QString CName;
+    int CId;
 };
 
 #endif // TCPSERVER_H

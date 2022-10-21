@@ -15,6 +15,7 @@
 #include <QFileDialog>
 #include <QFile>
 #include <QFileInfo>
+#include <QtNetwork>
 #include <QProgressDialog>
 
 #define BLOCK_SIZE      1024
@@ -23,8 +24,22 @@ TCPClient::TCPClient(QWidget *parent) : QWidget(parent), isSent(false) {
     // 연결한 서버 정보 입력을 위한 위젯들
     name = new QLineEdit(this);
 
+    /*ipAddress 자동 할당 코드*/
+    QString ipAddress;
+    QNetworkInterface interface;
+    QList<QHostAddress> ipList=interface.allAddresses();
+    for (int i = 0; i < ipList.size(); i++)
+    {
+        if (ipList.at(i) != QHostAddress::LocalHost && ipList.at(i).toIPv4Address())
+        {
+            ipAddress = ipList.at(i).toString();
+            break;
+        }
+    }
+    /*ipAddress 자동 할당 코드*/
+
     serverAddress = new QLineEdit(this);
-    serverAddress->setText("127.0.0.1");
+    serverAddress->setText(ipAddress);
     //serverAddress->setInputMask("999.999.999.999;_");
     QRegularExpression re("^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
                           "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
@@ -70,7 +85,7 @@ TCPClient::TCPClient(QWidget *parent) : QWidget(parent), isSent(false) {
 
     // 종료 기능
     QPushButton* quitButton = new QPushButton("Log Out", this);
-    connect(quitButton, SIGNAL(clicked( )), this, SLOT(close( )));
+    connect(quitButton, SIGNAL(clicked( )), this, SLOT(cl  ose( )));
 
     QHBoxLayout *buttonLayout = new QHBoxLayout;
     buttonLayout->addWidget(fileButton);
@@ -150,39 +165,66 @@ void TCPClient::receiveData( )
     QByteArray bytearray = clientSocket->read(BLOCK_SIZE);
 
     Client_Chat type;       // 채팅의 목적
-    char data[1020];        // 전송되는 메시지/데이터
-    memset(data, 0, 1020);
+
+    QString ClientName;
 
     QDataStream in(&bytearray, QIODevice::ReadOnly);
     in.device()->seek(0);
-    in >> type;
-    in.readRawData(data, 1020);
+
+    char data[1020 /*- sizeof(ClientName)*/];        // 전송되는 메시지/데이터
+    memset(data, 0, 1020 /*- sizeof(ClientName)*/);
+    in >> type /*>> ClientName*/;
+    in.readRawData(data, 1020 /*- sizeof(ClientName)*/);
 
     switch(type) {
     case Client_Chat_Talk:
-        message->append(QString(data));
-        inputLine->setEnabled(true);
-        sentButton->setEnabled(true);
-        fileButton->setEnabled(true);
-        //connectButton->setText("Chat Out");
+
+        //qDebug("[%s] %s : %d", __FILE__, __FUNCTION__, __LINE__);
+        if(TCPClient::flag == 0)    /*플래그를 설정해서 0인경우 채팅 활성화*/
+        {
+            message->append(QString(data));
+            //inputLine->setDisabled(true);
+            inputLine->setEnabled(true);
+            sentButton->setEnabled(true);
+            fileButton->setEnabled(true);
+            //connectButton->setText("Chat Out");
+            connectButton->setEnabled(false);
+        }
+        else    /*한번 강퇴 되면 플래그가 1로 변경되어서 입력문에 채팅을 할 수 없게 됨*/
+        {
+            inputLine->setDisabled(true);
+            inputLine->setEnabled(false);
+            sentButton->setEnabled(false);
+            fileButton->setEnabled(false);
+            //connectButton->setText("Chat Out");
+            connectButton->setEnabled(false);
+        }
         break;
     case Client_Chat_KickOut:
+        flag = 1;
         QMessageBox::critical(this, tr("Chatting Client"), \
                               tr("Kick out from Server"));
         inputLine->setDisabled(true);
         sentButton->setDisabled(true);
         fileButton->setDisabled(true);
-       // connectButton->setText("Chat in");
+        connectButton->setText("Chat in");
+        connectButton->setEnabled(false);
         name->setReadOnly(false);
         break;
     case Client_Chat_Invite:
+        flag = 0;
         QMessageBox::information(this, tr("Chatting Client"), \
                               tr("Invited from Server"));
+        /*프로토콜을 보내서 챗인 상태로 전환하는 좋은 방법*/
+//        sendProtocol(Client_Chat_In,
+//                     ClientName.toStdString().data());
         inputLine->setEnabled(true);
         sentButton->setEnabled(true);
         fileButton->setEnabled(true);
-       // connectButton->setText("Chat Out");
+        connectButton->setText("Chat Out");
+        connectButton->setEnabled(true);
         name->setReadOnly(true);
+
         break;
     };
 }
@@ -201,7 +243,10 @@ void TCPClient::sendProtocol(Client_Chat type, char* data, int size)
 {
     QByteArray dataArray;           // 소켓으로 보낼 데이터를 채우고
     QDataStream out(&dataArray, QIODevice::WriteOnly);
-    out.device()->seek(0);
+    /*현재 설정된 I/O 장치를 반환하거나 현재 설정된 장치가 없으면 nullptr을 반환합니다.*/
+    out.device()->seek(0);          //버퍼를 맨앞에다가 위치
+    /*QIODevice를 서브클래싱할 때 QIODevice의 내장 버퍼와의
+     * 무결성을 보장하기 위해 함수 시작 시 QIODevice::seek()를 호출해야 합니다.*/
     out << type;
     out.writeRawData(data, size);
     clientSocket->write(dataArray);     // 서버로 전송
@@ -267,7 +312,7 @@ void TCPClient::sendFile() // 파일을 열고 파일 이름(경로 포함)을 �
     totalSize += outBlock.size(); // 전체 크기는 파일 크기에 파일 이름 및 기타 정보의 크기를 더한 것입니다.
 
     byteToWrite += outBlock.size();
-
+    /*데이터 스트림의 커서를 앞에 위치 시킴*/
     out.device()->seek(0); //바이트 스트림의 시작 부분으로 돌아가 전체 크기와 파일 이름 및 기타 정보 크기인 qint64를 앞에 씁니다.
     out << totalSize << qint64(outBlock.size());
 

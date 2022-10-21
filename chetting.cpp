@@ -44,7 +44,7 @@ Chetting::Chetting(QWidget *parent) :
     /*ipAddress 자동 할당 코드*/
     QString ipAddress;
     QNetworkInterface interface;
-    QList<QHostAddress> ipList=interface.allAddresses();
+    QList<QHostAddress> ipList = interface.allAddresses();
     for (int i = 0; i < ipList.size(); i++)
     {
         if (ipList.at(i) != QHostAddress::LocalHost && ipList.at(i).toIPv4Address())
@@ -84,6 +84,7 @@ Chetting::Chetting(QWidget *parent) :
             [=]{
         if(ui->connectButton->text() == tr("Log In"))
         {
+            /*관리자 이름 정보 전달*/
             emit TCPSignal(0, ui->manager->text());
             clientSocket->connectToHost(
                         ui->ipAddress->text(),
@@ -226,22 +227,28 @@ void Chetting::receiveData( )
     if (clientSocket->bytesAvailable( ) > BLOCK_SIZE) return;
     QByteArray bytearray = clientSocket->read(BLOCK_SIZE);
 
+    /*새로 만들기*/
+    QString ClientName;
+    //char* ch_Name = ClientName;
+
     StatusOfChat type;      /*채팅의 목적*/
-    char data[1020];        /*전송되는 메시지/데이터*/
-    memset(data, 0, 1020);
 
     QDataStream in(&bytearray, QIODevice::ReadOnly);
     in.device()->seek(0);
-    in >> type;
-    in.readRawData(data, 1020);
+    in >> type /*>> ClientName*/;
 
-    qDebug( ) << type;
+    char data[1020 /*- sizeof(ClientName)*/];        /*전송되는 메시지/데이터*/
+    memset(data, 0, 1020 /*- sizeof(ClientName)*/);
+
+    qDebug() << ClientName;
+    in.readRawData(data, 1020 /*- sizeof(ClientName)*/);
+
     switch(type) {
     case Chat_Talk:
         ui->textmessage->append(QString(data));
         ui->inputEdit->setEnabled(true);
         ui->sendButton->setEnabled(true);
-        ui->connectButton->setDisabled(true);
+        ui->connectButton->setEnabled(true);
 
 
         /*file버튼 enable 상태 추가*/
@@ -255,15 +262,21 @@ void Chetting::receiveData( )
         /*file과 이름 disable상태로 변환*/
         ui->FileSendButton->setDisabled(true);
         ui->manager->setReadOnly(false);
+        ui->connectButton->setText("Chat in");
         break;
     case Chat_Invite:
         QMessageBox::information(this, tr("Chatting Client"), \
                                  tr("Invited from Server"));
+
+
+        /*프로토콜을 보내서 챗인 상태로 전환하는 좋은 방법*/
+        sendProtocol(Chat_In, ClientName.toStdString().data());
         ui->inputEdit->setEnabled(true);
         ui->sendButton->setEnabled(true);
         /*파일버튼과 이름 에디터 상태 추가*/
         ui->FileSendButton->setEnabled(true);
         ui->manager->setReadOnly(true);
+        ui->connectButton->setText("Chat Out");
         break;
     };
 }

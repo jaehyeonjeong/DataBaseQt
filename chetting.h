@@ -25,8 +25,6 @@ typedef enum {          /*chat state*/
     Chat_Invite,    //초대
     Chat_KickOut,   //강제퇴장
 
-
-
     /*같은 서버에서 통신하지 않게 지워두기 1020코드수정*/
 //    Chat_FileTrasform_Start,    //파일전송시작 --> 파일오픈
 //    Chat_FileTransform,         //파일전송

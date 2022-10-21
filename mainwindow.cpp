@@ -138,6 +138,8 @@ void MainWindow::on_actionchatting_triggered()
     qDebug(".......");
     tcpclient = new TCPClient;
     tcpclient->setWindowFlag(Qt::WindowStaysOnTopHint);
+    //윈도우는 항상 위에 위치
+    tcpclient->move(100, 600);  //x = 100, y = 600에 위치
     tcpclient->show();
 }
 

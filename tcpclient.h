@@ -42,6 +42,8 @@ private slots:
 private:
     void closeEvent(QCloseEvent*) override;
 
+    int flag = 0;
+
     QLineEdit *name;                // ID(이름)을 입력하는 창
     QTextEdit *message;             // 서버에서 오는 메세지 표시용
     QLineEdit* serverAddress;
