@@ -311,7 +311,7 @@ void Chetting::sendFile( )
     loadSize = 1024; // 매번 전송되는 데이터의 크기
 
     QDataStream out(&outBlock, QIODevice::WriteOnly);
-    out << qint64(0) << qint64(0) << filename;
+    out << qint64(0) << qint64(0) << filename << ui->manager->text();
 
     totalSize += outBlock.size();
     //전체 크기는 파일 크기에 파일 이름 및 기타 정보의 크기를 더한 것입니다.

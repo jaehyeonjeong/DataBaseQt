@@ -1,4 +1,5 @@
-#include "tcpserver.h"
+#include "tcpserver.h".h"
+#include "chetting.h"
 #include "ui_tcplog.h"
 #include "logthread.h"
 
@@ -12,24 +13,25 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QMenu>
-
-/*1019 강사님께서 작성하신 코드*/
-#include <QFile>                /*파일 해더*/
-#include <QFileInfo>            /*파일 정보  헤더*/
-#include <QProgressDialog>      /*프로그래그 다이얼로그 해더*/
+#include <QFile>
+#include <QFileInfo>
+#include <QProgressDialog>
 
 TCPServer::TCPServer(QWidget *parent) :
-    QWidget(parent), ui(new Ui::tcplog), totalSize(0), /*데이터와 리시브 초기화*/
-    byteReceived(0)
+    QWidget(parent),
+    ui(new Ui::tcplog), totalSize(0), byteReceived(0)
 {
     ui->setupUi(this);
     QList<int> sizes;
-    sizes << 120 << 500;
+    sizes << 200 << 400;
     ui->splitter->setSizes(sizes);
 
+    /*채팅을 위한 서버 할당*/
     tcpServer = new QTcpServer(this);
     connect(tcpServer, SIGNAL(newConnection( )), SLOT(clientConnect( )));
-    if (!tcpServer->listen(QHostAddress::Any, PORT_NUMBER)) {
+    /*newConnection : 이 신호는 새 연결을 사용할 수 있을 때마다 발생합니다.*/
+    /*clientConnect 채팅을 위한 슬롯 커넥트*/
+    if (!tcpServer->listen(QHostAddress::Any, PORT_NUMBER)) {       /*PORT NUMBER = 8000*/
         QMessageBox::critical(this, tr("Chatting Server"), \
                               tr("Unable to start the server: %1.") \
                               .arg(tcpServer->errorString( )));
@@ -37,11 +39,13 @@ TCPServer::TCPServer(QWidget *parent) :
         return;
     }
 
+    /*파일 선송을 위한 서버*/
     fileServer = new QTcpServer(this);
     connect(fileServer, SIGNAL(newConnection()), SLOT(acceptConnection()));
-    if (!fileServer->listen(QHostAddress::Any, PORT_NUMBER+1)) {
-        QMessageBox::critical(this, tr("Chatting Server"), \
-                              tr("Unable to start the server: %1.") \
+    /*accpetConnection 파일 전송을 위한 커넥트*/
+    if (!fileServer->listen(QHostAddress::Any, PORT_NUMBER+1)) {    /*PORT NUMBER = 8001*/
+        QMessageBox::critical(this, tr("Chatting Server"),         /*채팅의 과 파일 전송의 포트가 같으면*/
+                              tr("Unable to start the server: %1.") /*통신이 안될 수 있으므로 다른포트로 저장*/
                               .arg(fileServer->errorString( )));
         close( );
         return;
@@ -61,25 +65,30 @@ TCPServer::TCPServer(QWidget *parent) :
     menu->addAction(removeAction);
     ui->treeWidget->setContextMenuPolicy(Qt::CustomContextMenu);
 
+    /*파일 전송 상태를 출력하기 위한 프로그래스바 출력*/
     progressDialog = new QProgressDialog(0);
     progressDialog->setAutoClose(true);
     progressDialog->reset();
 
+    /*채팅 기록을 1분마다 저장할 수 있는 로그 스레드 생성후 스레드 동작*/
     logThread = new LogThread(this);
     logThread->start();
 
+    connect(ui->saveButton, SIGNAL(clicked()),
+            logThread, SLOT(appendData(QTreeWidgetItem*)));
+
     qDebug() << tr("The server is running on port %1.").arg(tcpServer->serverPort( ));
+
+    connect(ui->saveButton, SIGNAL(clicked()), logThread, SLOT(saveData()));
 }
 
 TCPServer::~TCPServer()
 {
     delete ui;
-//    delete menu;
-    /*쓰레드, 채팅, 파일 모드 종료*/
-    logThread->terminate();
-    fileServer->close();
-    tcpServer->close( );
 
+    logThread->terminate();
+    tcpServer->close( );
+    fileServer->close( );
 }
 
 void TCPServer::clientConnect( )
@@ -134,7 +143,7 @@ void TCPServer::receiveData( )
                 QByteArray sendArray;
                 sendArray.clear();
                 QDataStream out(&sendArray, QIODevice::WriteOnly);
-                out << Server_Chat_Talk;
+                out << Chat_Talk;
                 sendArray.append("<font color=lightsteelblue>");
                 sendArray.append(clientNameHash[port].toStdString().data());
                 sendArray.append("</font> : ");
@@ -149,18 +158,13 @@ void TCPServer::receiveData( )
         item->setText(1, QString::number(port));
         item->setText(2, QString::number(clientIDHash[clientNameHash[port]]));
         item->setText(3, clientNameHash[port]);
-
-//        item->setText(2, QString::number(clientIDHash[oldClientNameHash[ip]]));
-//        item->setText(3, oldClientNameHash[ip]);
-
         item->setText(4, QString(data));
         item->setText(5, QDateTime::currentDateTime().toString());
         item->setToolTip(4, QString(data));
+        ui->logtreeWidget->addTopLevelItem(item);
 
         for(int i = 0; i < ui->logtreeWidget->columnCount(); i++)
             ui->logtreeWidget->resizeColumnToContents(i);
-
-        ui->logtreeWidget->addTopLevelItem(item);
 
         logThread->appendData(item);
     }
@@ -173,7 +177,7 @@ void TCPServer::receiveData( )
             clientNameHash.remove(port);
         }
         break;
-    case Server_Chat_LogOut:
+    case Chat_LogOut:
         foreach(auto item, ui->treeWidget->findItems(name, Qt::MatchContains, 1)) {
             if(item->text(0) != "X") {
                 item->setText(0, "X");
@@ -188,13 +192,14 @@ void TCPServer::receiveData( )
 void TCPServer::removeClient()
 {
     QTcpSocket *clientConnection = dynamic_cast<QTcpSocket *>(sender( ));
-    clientList.removeOne(clientConnection);
-    clientConnection->deleteLater();
 
     QString name = clientNameHash[clientConnection->peerPort()];
-    foreach(auto item, ui->logtreeWidget->findItems(name, Qt::MatchContains, 1)) {
-        //item->setText(0, "X");
+    foreach(auto item, ui->treeWidget->findItems(name, Qt::MatchContains, 1)) {
+        item->setText(0, "X");
     }
+
+    clientList.removeOne(clientConnection);
+    clientConnection->deleteLater();
 }
 
 void TCPServer::addClient(int id, QString name)
@@ -208,9 +213,25 @@ void TCPServer::addClient(int id, QString name)
     ui->treeWidget->resizeColumnToContents(0);
 }
 
+void TCPServer::removeClient(int id)
+{
+    qDebug() << id;
+    ui->treeWidget->takeTopLevelItem(id);
+}
+
+void TCPServer::modifyClient(QString name, int index)
+{
+    ui->treeWidget->takeTopLevelItem(index);
+    QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeWidget);
+    item->setText(0, "X");
+    item->setText(1, name);
+    ui->treeWidget->addTopLevelItem(item);
+    //clientIDHash[name] = id;
+    ui->treeWidget->resizeColumnToContents(0);
+}
+
 void TCPServer::receiveManager(int id, QString name)
 {
-    clientIDList << id;
     QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeWidget);
     item->setText(0, "X");
     item->setText(1, name);
@@ -219,16 +240,26 @@ void TCPServer::receiveManager(int id, QString name)
     ui->treeWidget->resizeColumnToContents(0);
 }
 
+
 void TCPServer::on_treeWidget_customContextMenuRequested(const QPoint &pos)
 {
-    foreach(QAction *action, menu->actions()) {
-        if(action->objectName() == "Invite")
-            action->setEnabled(ui->treeWidget->currentItem()->text(0) != "O");
-        else
-            action->setEnabled(ui->treeWidget->currentItem()->text(0) == "O");
+    if(ui->treeWidget->currentItem())               /*빈 커렌트 아이템 클릭시 예외처리 완료*/
+    {
+        foreach(QAction *action, menu->actions()) {
+            if(action->objectName() == "Invite")
+                action->setEnabled(ui->treeWidget->currentItem()->text(0) != "O");
+            else
+                action->setEnabled(ui->treeWidget->currentItem()->text(0) == "O");
+        }
+        QPoint globalPos = ui->treeWidget->mapToGlobal(pos);
+        menu->exec(globalPos);
     }
-    QPoint globalPos = ui->treeWidget->mapToGlobal(pos);
-    menu->exec(globalPos);
+    else
+    {
+        return;
+    }
+
+
 }
 
 void TCPServer::kickOut()
@@ -238,14 +269,11 @@ void TCPServer::kickOut()
 
     QByteArray sendArray;
     QDataStream out(&sendArray, QIODevice::WriteOnly);
-    out << Server_Chat_KickOut;
+    out << Chat_KickOut;
     out.writeRawData("", 1020);
-
-//            sock->disconnectFromHost();
     sock->write(sendArray);
+
     ui->treeWidget->currentItem()->setText(0, "-");
-//    clientIDList.append(clientIDHash[name]);
-//    ui->inviteComboBox->addItem(name);
 }
 
 void TCPServer::inviteClient()
@@ -255,20 +283,20 @@ void TCPServer::inviteClient()
 
         QByteArray sendArray;
         QDataStream out(&sendArray, QIODevice::WriteOnly);
-        out << Server_Chat_Invite;
+        out << Chat_Invite;
         out.writeRawData("", 1020);
         QTcpSocket* sock = clientSocketHash[name];
-
         sock->write(sendArray);
+
         foreach(auto item, ui->treeWidget->findItems(name, Qt::MatchFixedString, 1)) {
             if(item->text(1) != "O") {
                 item->setText(0, "O");
-//                clientList.append(sock);        // QList<QTcpSocket*> clientList;
             }
         }
     }
 }
 
+/* 파일 전송 */
 void TCPServer::acceptConnection()
 {
     qDebug("Connected, preparing to receive files!");
@@ -282,6 +310,7 @@ void TCPServer::readClient()
     qDebug("Receiving file ...");
     QTcpSocket* receivedSocket = dynamic_cast<QTcpSocket *>(sender( ));
     QString filename;
+    QString name;
 
     if (byteReceived == 0) { // just started to receive data, this data is file information
         progressDialog->reset();
@@ -290,11 +319,15 @@ void TCPServer::readClient()
         QString ip = receivedSocket->peerAddress().toString();
         quint16 port = receivedSocket->peerPort();
 
+        QDataStream in(receivedSocket);
+        in >> totalSize >> byteReceived >> filename >> name;
+        progressDialog->setMaximum(totalSize);
+
         QTreeWidgetItem* item = new QTreeWidgetItem(ui->logtreeWidget);
         item->setText(0, ip);
         item->setText(1, QString::number(port));
-        item->setText(2, QString::number(clientIDHash[clientNameHash[port]]));
-        item->setText(3, clientNameHash[port]);
+        item->setText(2, QString::number(clientIDHash[name]));
+        item->setText(3, name);
         item->setText(4, filename);
         item->setText(5, QDateTime::currentDateTime().toString());
         item->setToolTip(4, filename);
@@ -305,10 +338,6 @@ void TCPServer::readClient()
         ui->logtreeWidget->addTopLevelItem(item);
 
         logThread->appendData(item);
-
-        QDataStream in(receivedSocket);
-        in >> totalSize >> byteReceived >> filename;
-        progressDialog->setMaximum(totalSize);
 
         QFileInfo info(filename);
         QString currentFileName = info.fileName();
@@ -336,4 +365,3 @@ void TCPServer::readClient()
         delete file;
     }
 }
-

@@ -1,5 +1,4 @@
 #include "shopping.h"
-#include "product.h"
 
 Shopping::Shopping(int id, QString Client, QString Product, QString Date, int quan, int AllPrice)
 {

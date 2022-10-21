@@ -67,8 +67,8 @@ private slots:
 
     /*클라이언트 데이터가 추가, 삭제, 수정 될때마다 서버의 클라이언트 리스트가 바뀜*/
     void addClient(int, QString);
-//    void removeClient(int);
-//    void modifyClient(QString, int);
+    void removeClient(int);
+    void modifyClient(QString, int);
 
     /*chetting class에 있는 데이터가 받아지는 함수*/
     void receiveManager(int, QString);

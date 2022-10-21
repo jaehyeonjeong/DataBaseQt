@@ -164,7 +164,7 @@ void TCPClient::receiveData( )
         inputLine->setEnabled(true);
         sentButton->setEnabled(true);
         fileButton->setEnabled(true);
-        connectButton->setText("Chat Out");
+        //connectButton->setText("Chat Out");
         break;
     case Client_Chat_KickOut:
         QMessageBox::critical(this, tr("Chatting Client"), \
@@ -172,7 +172,7 @@ void TCPClient::receiveData( )
         inputLine->setDisabled(true);
         sentButton->setDisabled(true);
         fileButton->setDisabled(true);
-        connectButton->setText("Chat in");
+       // connectButton->setText("Chat in");
         name->setReadOnly(false);
         break;
     case Client_Chat_Invite:
@@ -181,7 +181,7 @@ void TCPClient::receiveData( )
         inputLine->setEnabled(true);
         sentButton->setEnabled(true);
         fileButton->setEnabled(true);
-        connectButton->setText("Chat Out");
+       // connectButton->setText("Chat Out");
         name->setReadOnly(true);
         break;
     };
@@ -220,7 +220,7 @@ void TCPClient::sendData(  )
     }
 }
 
-void TCPClient::goOnSend(qint64 numBytes) // Start sending file content
+void TCPClient::goOnSend(qint64 numBytes) // 파일 내용 보내기 시작
 {
     byteToWrite -= numBytes; // Remaining data size
     outBlock = file->read(qMin(byteToWrite, numBytes));
@@ -235,7 +235,7 @@ void TCPClient::goOnSend(qint64 numBytes) // Start sending file content
     }
 }
 
-void TCPClient::sendFile() // Open the file and get the file name (including path)
+void TCPClient::sendFile() // 파일을 열고 파일 이름(경로 포함)을 가져옵니다.
 {
     loadSize = 0;
     byteToWrite = 0;
@@ -247,29 +247,31 @@ void TCPClient::sendFile() // Open the file and get the file name (including pat
     file->open(QFile::ReadOnly);
 
     qDebug() << QString("file %1 is opened").arg(filename);
-    progressDialog->setValue(0); // Not sent for the first time
+    progressDialog->setValue(0); // 처음으로 전송되지 않음
 
-    if (!isSent) { // Only the first time it is sent, it happens when the connection generates the signal connect
+    if (!isSent) { //처음 전송될 때만 연결이 연결 신호를 생성할 때 발생합니다.
+
         fileClient->connectToHost(serverAddress->text( ),
                                   serverPort->text( ).toInt( ) + 1);
         isSent = true;
     }
 
-    // When sending for the first time, connectToHost initiates the connect signal to call send, and you need to call send after the second time
+    // 처음으로 보낼 때 connectToHost는 send를 호출하기 위해 연결 신호를 시작하고 두 번째 후에는 send를 호출해야 합니다.
 
-    byteToWrite = totalSize = file->size(); // The size of the remaining data
-    loadSize = 1024; // The size of data sent each time
+    byteToWrite = totalSize = file->size(); // 나머지 데이터의 크기
+    loadSize = 1024; // 매번 전송되는 데이터의 크기
 
     QDataStream out(&outBlock, QIODevice::WriteOnly);
     out << qint64(0) << qint64(0) << filename;
 
-    totalSize += outBlock.size(); // The total size is the file size plus the size of the file name and other information
+    totalSize += outBlock.size(); // 전체 크기는 파일 크기에 파일 이름 및 기타 정보의 크기를 더한 것입니다.
+
     byteToWrite += outBlock.size();
 
-    out.device()->seek(0); // Go back to the beginning of the byte stream to write a qint64 in front, which is the total size and file name and other information size
+    out.device()->seek(0); //바이트 스트림의 시작 부분으로 돌아가 전체 크기와 파일 이름 및 기타 정보 크기인 qint64를 앞에 씁니다.
     out << totalSize << qint64(outBlock.size());
 
-    fileClient->write(outBlock); // Send the read file to the socket
+    fileClient->write(outBlock); // 읽은 파일을 소켓으로 보냅니다.
 
     progressDialog->setMaximum(totalSize);
     progressDialog->setValue(totalSize-byteToWrite);

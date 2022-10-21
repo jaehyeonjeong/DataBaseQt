@@ -18,6 +18,8 @@ signals:
 public slots:
     void appendData(QTreeWidgetItem*);
 
+    void saveData();
+
 private:
     void run();
 

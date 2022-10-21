@@ -76,6 +76,8 @@ private slots:
     /*tcp client로 받는 데이터를 리시브 할 수 있는 코드*/
     void receiveTCPClientName(QString);
 
+
+
     //void on_listWidget_itemClicked(QListWidgetItem *item);
 
 private:

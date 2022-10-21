@@ -118,11 +118,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(chettingapp, SIGNAL(TCPSignal(int, QString)),
             tcpserver, SLOT(receiveManager(int, QString)));
 
-//    connect(clientmanager, SIGNAL(ClientRemove(int)),
-//            tcpserver, SLOT(removeClient(int)));
+    connect(clientmanager, SIGNAL(ClientRemove(int)),
+            tcpserver, SLOT(removeClient(int)));
 
-//    connect(clientmanager, SIGNAL(TCPClientModify(QString,int)),
-//            tcpserver, SLOT(modifyClient(QString,int)));
+    connect(clientmanager, SIGNAL(TCPClientModify(QString,int)),
+            tcpserver, SLOT(modifyClient(QString,int)));
 
 }
 
