@@ -8,47 +8,36 @@
 #include "tcpserver.h"
 
 #include <QMdiSubWindow>
+#include <QApplication>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    clientmanager = new ClientManager(this);
-    productmanager = new ProductManager(this);
-    shoppingmanager = new ShoppingManager(this);
 
-    //    TCPServer* tcpserver;
-    //    TCPClient* tcpclient;
-    tcpserver = new TCPServer(this);
-    tcpclient = new TCPClient(this);
-    //logwindow = new tcplog(this);
+    this->setWindowTitle("Ostem Project");          /*프로젝트 타이틀*/
+    clientmanager = new ClientManager(this);        /*고객관리 클래스 변수 초기화*/
+    productmanager = new ProductManager(this);      /*상품관리 클래스 변수 초기화*/
+    shoppingmanager = new ShoppingManager(this);    /*구매정보관리 클래스 변수 초기화*/
 
-    chettingapp = new Chetting(this);
+    tcpserver = new TCPServer(this);            /*서버 및 로그 위젯 클래스 변수 초기화*/
+    tcpclient = new TCPClient(this);            /*클라이언트 채팅방 클래스 변수 초기화*/
 
+    chettingapp = new Chetting;     /*관리자 채팅방 초기화*/
 
-    ui->tabWidget->addTab(clientmanager, tr("&ClientTab"));
-    ui->tabWidget->addTab(productmanager, tr("&ProductTab"));
-    //ui->tabWidget->addTab(shoppingmanager, tr("&ShoppingTab"));
-
-    //    QMdiArea mdiArea;
-    //    QMdiSubWindow *subWindow1 = new QMdiSubWindow;
-    //    subWindow1->setWidget(internalWidget1);
-    //    subWindow1->setAttribute(Qt::WA_DeleteOnClose);
-    //    mdiArea.addSubWindow(subWindow1);
-
-    //    QMdiSubWindow *subWindow2 =
-    //        mdiArea.addSubWindow(internalWidget2);
+    ui->tabWidget->addTab(clientmanager, tr("&ClientTab"));     /*고객관리 Ui를 탭으로 추가*/
+    ui->tabWidget->addTab(productmanager, tr("&ProductTab"));   /*상품관리 Ui를 탭으로 추가*/
 
     /*쇼핑리스트를 보여주는 토드*/
-    subWindow = new QMdiSubWindow;
-    subWindow->setWidget(shoppingmanager);
-    subWindow->setAttribute(Qt::WA_DeleteOnClose);
+    subWindow = new QMdiSubWindow;              /*서브윈도우 클래스 변수 초기화*/
+    subWindow->setWidget(shoppingmanager);      /*구매정보관리 Ui 위젯으로 세팅*/
+    subWindow->setAttribute(Qt::WA_DeleteOnClose);  /*창 속성을 Qt::WA_DeleteOnClose로 설정하여 Qt가 창을 닫는 즉시 메모리에서 창 삭제를 처리하도록 합니다.*/
     subWindow->setWindowTitle("Shopping Window");
-    subWindow->setGeometry(0, 0, 800, 400);
+    subWindow->setGeometry(0, 0, 800, 400);      /*매개인자 1) x좌표, 2) y좌표, 3) 위젯의 width, 4) 위젯의 height*/
     subWindow->setWindowFlags(/*Qt::WindowTitleHint|Qt::WindowMinimizeButtonHint*/
-                              Qt::FramelessWindowHint);
-    ui->mdiArea->addSubWindow(subWindow);
+                              Qt::FramelessWindowHint); /*MDI에서 생성되는 윈도우의 축소/확대/닫기 버튼을 보이지 않게 함.*/
+    ui->mdiArea->addSubWindow(subWindow);        /*MDI에 서브 윈도우 추가*/
 
     /*TCP 서버와 로그 상태를 담당하는 윈도우*/
     TcpSubWindow[0] = new QMdiSubWindow;
@@ -56,74 +45,55 @@ MainWindow::MainWindow(QWidget *parent)
     TcpSubWindow[0]->setAttribute(Qt::WA_DeleteOnClose);
     TcpSubWindow[0]->setWindowTitle("TcpServer");
     TcpSubWindow[0]->setWindowFlags(/*Qt::WindowTitleHint|Qt::WindowMinimizeButtonHint*/
-                              Qt::FramelessWindowHint);
+                                    Qt::FramelessWindowHint);
     ui->mdiArea->addSubWindow(TcpSubWindow[0]);
-    TcpSubWindow[0]->setGeometry(0, 400, 450, 360);
+    TcpSubWindow[0]->setGeometry(0, 400, 800, 380);/*매개인자 1) x좌표, 2) y좌표, 3) 위젯의 width, 4) 위젯의 height*/
 
-    /*고객 윈도우 그러나 프로젝트를 출력하면 보이지 않음*/
+    /*고객 윈도우 그러나 프로젝트를 출력하면 보이지 않음 메인윈도우를 늘려야지 볼 수 있음*/
     TcpSubWindow[1] = new QMdiSubWindow;
     TcpSubWindow[1]->setWidget(tcpclient);
     TcpSubWindow[1]->setAttribute(Qt::WA_DeleteOnClose);
     TcpSubWindow[1]->setWindowTitle("client chetting");
     TcpSubWindow[1]->setWindowFlags(Qt::WindowTitleHint|Qt::WindowMinimizeButtonHint
-                              /*Qt::FramelessWindowHint*/);
+                                    /*Qt::FramelessWindowHint*/);/*최소의 버튼만 표시*/
     ui->mdiArea->addSubWindow(TcpSubWindow[1]);
-    TcpSubWindow[1]->setGeometry(800, 0, 340, 380);
-
-    /*관리자 채팅을 보여주는 코드*/
-    TcpSubWindow[2] = new QMdiSubWindow;
-    TcpSubWindow[2]->setWidget(chettingapp);
-    TcpSubWindow[2]->setAttribute(Qt::WA_DeleteOnClose);
-    TcpSubWindow[2]->setWindowTitle("manager Chetting Application");
-    TcpSubWindow[2]->setWindowFlags(/*Qt::WindowTitleHint|Qt::WindowMinimizeButtonHint*/
-                              Qt::FramelessWindowHint);
-    ui->mdiArea->addSubWindow(TcpSubWindow[2]);
-    TcpSubWindow[2]->setGeometry(450, 390, 340, 370);
-
-//    TcpSubWindow[3] = new QMdiSubWindow;
-//    TcpSubWindow[3]->setWidget(logwindow);
-//    TcpSubWindow[3]->setAttribute(Qt::WA_DeleteOnClose);
-//    TcpSubWindow[3]->setWindowTitle("chetting log Window");
-//    ui->mdiArea->addSubWindow(TcpSubWindow[3]);
-//    TcpSubWindow[3]->setGeometry(450, 100, 340, 300);
+    TcpSubWindow[1]->setGeometry(800, 0, 340, 380);/*매개인자 1) x좌표, 2) y좌표, 3) 위젯의 width, 4) 위젯의 height*/
 
 
     /*탭과 MDIAREA 스핀로드*/
     QList<int> list;
-    list << 700 << 800;
-    ui->splitter->setSizes(list);
+    list << 700 << 800;      /*메인윈도우의 전체 넓이 1500중 700은 탭 위젯, 800은 MDI위젯을 출력*/
+    ui->splitter->setSizes(list);   /*스플리터 사이즈를 세팅*/
 
     /*메인윈도우에서 데이터 커넥트*/
-    connect(clientmanager, SIGNAL(ClientAdded(QString)),
-            shoppingmanager, SLOT(CreceiveData(QString)));
+    connect(clientmanager, SIGNAL(ClientAdded(QString)),    /*고객의 성함을 넘기는 신호를 보냄*/
+            shoppingmanager, SLOT(CreceiveData(QString)));  /*고객의 성함 신호를 받아 구매정보 위젯에 고객의 성함을 갱신*/
 
-    connect(productmanager, SIGNAL(ProductAdded(QString)),
-            shoppingmanager, SLOT(PreceiveData(QString)));
+    connect(productmanager, SIGNAL(ProductAdded(QString)),  /*상품의 이름을 넘기는 신호를 보냄*/
+            shoppingmanager, SLOT(PreceiveData(QString)));  /*상품의 이름 신호를 받아 구매정보 위젯에 상품의 이름을 갱신*/
 
-    connect(productmanager, SIGNAL(ProductPrices(QString)),
-            shoppingmanager, SLOT(PreceivePrice(QString)));
+    connect(productmanager, SIGNAL(ProductPrices(QString)), /*상품의 가격을 넘기는 신호를 보냄*/
+            shoppingmanager, SLOT(PreceivePrice(QString))); /*상품의 가격 신호를 받아 구매정보 위젯에 상품의 가격을 갱신*/
 
-    this->resize(1500, 840);
-
-    //    connect(chettingapp->clientsocket,
-    //            &QAbstractSocket::errorOccurred,
-    //            [=]{qDebug() << chettingapp->clientsocket->errorString();
-    //    });
-    //connect(chettingapp, SIGNAL(readyRead()), SLOT(sendData()));
+    this->resize(1500, 840);        /*출력되는 프로젝트의 넓이와 높이를 조젛 width : 1500, height : 840*/
 
     connect(clientmanager, SIGNAL(TCPClientAdded(int, QString)),
             tcpserver, SLOT(addClient(int, QString)));
     clientmanager->loadData();
 
-    connect(chettingapp, SIGNAL(TCPSignal(int, QString)),
-            tcpserver, SLOT(receiveManager(int, QString)));
-
     connect(clientmanager, SIGNAL(ClientRemove(int)),
             tcpserver, SLOT(removeClient(int)));
 
-    connect(clientmanager, SIGNAL(TCPClientModify(QString,int)),
-            tcpserver, SLOT(modifyClient(QString,int)));
+    connect(clientmanager, SIGNAL(TCPClientModify(int, QString,int)),
+            tcpserver, SLOT(modifyClient(int, QString,int)));
 
+    /*관리자 클라이언트에서 연결하는 요소는 반드시 생성자에 작성*/
+    connect(chettingapp, SIGNAL(TCPSignal(int, QString)),
+            tcpserver, SLOT(receiveManager(int, QString)));
+
+    /*서버로 부터 보내는 시그널 값을 클라이언트로 커넥트*/
+    connect(tcpserver, SIGNAL(compareSignal(int)),
+            tcpclient, SLOT(receiveSignal(int)));
 }
 
 MainWindow::~MainWindow()
@@ -132,14 +102,30 @@ MainWindow::~MainWindow()
 }
 
 
-/*클라이언트용 채팅활성화 chetting 툴바 버튼 클릭시 프로젝트 맨앞에서 출력*/
+/*클라이언트용 채팅활성화, chetting 툴바 버튼 클릭 시 프로젝트 맨앞에서 출력*/
 void MainWindow::on_actionchatting_triggered()
 {
     qDebug(".......");
     tcpclient = new TCPClient;
     tcpclient->setWindowFlag(Qt::WindowStaysOnTopHint);
+    tcpclient->setAttribute(Qt::WA_DeleteOnClose);
     //윈도우는 항상 위에 위치
     tcpclient->move(100, 600);  //x = 100, y = 600에 위치
     tcpclient->show();
+
+    /*비교하는 시그널을 보내서 받고 treeWidget의 아이템을 비교 */
+    connect(tcpclient, SIGNAL(compareName(QString)),
+            tcpserver, SLOT(compareServer(QString)));
+}
+
+/*관리자용 채팅 활성화 manager 툴바 버튼 클릭 시 프로젝트 맨앞에서 출력*/
+void MainWindow::on_actionmanager_triggered()
+{
+    chettingapp->setWindowFlag(Qt::WindowStaysOnTopHint);
+    chettingapp->setAttribute(Qt::WA_DeleteOnClose);
+    chettingapp->setWindowTitle("manager");
+    //윈도우는 항상 위에 위치
+    chettingapp->move(300, 600);  //x = 300, y = 600에 위치
+    chettingapp->show();
 }
 

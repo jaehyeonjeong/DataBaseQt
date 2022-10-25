@@ -149,7 +149,7 @@ void ClientManager::on_ModifyButton_clicked()
         c->setPhoneNumber(number);
         c->setAddress(address);
         clientList[key] = c;
-        emit TCPClientModify(name, index);
+        emit TCPClientModify(key, name, index);
     }
 }
 

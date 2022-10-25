@@ -226,15 +226,17 @@ void TCPServer::removeClient(int id)
     ui->treeWidget->takeTopLevelItem(id);
 }
 
-void TCPServer::modifyClient(QString name, int index)
+void TCPServer::modifyClient(int id, QString name, int index)
 {
     ui->treeWidget->takeTopLevelItem(index);
     QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeWidget);
     item->setText(0, "X");
     item->setText(1, name);
     ui->treeWidget->addTopLevelItem(item);
-    //clientIDHash[name] = id;
+    clientIDHash[name] = id;
     ui->treeWidget->resizeColumnToContents(0);
+
+    qDebug() << clientIDHash;
 }
 
 void TCPServer::receiveManager(int id, QString name)
@@ -307,6 +309,36 @@ void TCPServer::inviteClient()
             clientNameHash[port] = name;
         }
 
+    }
+}
+
+int commp = 0;
+/*비교하는 시그널을 받고 가지고있는 에디터를 비교하는 슬롯 */
+void TCPServer::compareServer(QString name)
+{
+//    int i = ui->treeWidget->currentColumn();
+//    auto flag = (i)? Qt::MatchCaseSensitive|Qt::MatchContains
+//                   : Qt::MatchCaseSensitive;
+//    {
+//        auto items = ui->treeWidget->findItems
+//                (name, flag, i);
+//        foreach(auto num, items)
+//        {
+//            if(name == nullptr)
+//                return;
+//        }
+//    }
+    int num;
+    qDebug() << ui->treeWidget->findItems(name, Qt::MatchFixedString, 1).length();
+    if(commp == ui->treeWidget->findItems(name, Qt::MatchFixedString, 1).length())
+    {
+       num = 0;
+       emit compareSignal(num);
+    }
+    else
+    {
+        num = 1;
+        emit compareSignal(num);
     }
 }
 

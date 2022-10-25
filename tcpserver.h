@@ -53,6 +53,8 @@ public:
     ~TCPServer();
 
 signals:
+    /*클라이언트 데이터가 일치하는 값인지 아닌지 판단하는 시그널*/
+    void compareSignal(int);
 private slots:
     void acceptConnection();            /*파일 서버*/
     void readClient();
@@ -68,11 +70,13 @@ private slots:
     /*클라이언트 데이터가 추가, 삭제, 수정 될때마다 서버의 클라이언트 리스트가 바뀜*/
     void addClient(int, QString);
     void removeClient(int);
-    void modifyClient(QString, int);
+    void modifyClient(int, QString, int);
 
     /*chetting class에 있는 데이터가 받아지는 함수*/
     void receiveManager(int, QString);
 
+    /*client data 받고 비교하는 슬롯 함수*/
+    void compareServer(QString);
 
     void inviteClient();
     void kickOut();

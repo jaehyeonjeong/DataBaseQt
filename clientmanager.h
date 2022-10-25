@@ -26,7 +26,7 @@ public:
 signals:
     void ClientAdded(QString);
     void ClientRemove(int);
-    void TCPClientModify(QString, int);
+    void TCPClientModify(int, QString, int);
     void TCPClientAdded(int, QString);
 
 

@@ -3,10 +3,6 @@
 
 #include <QTreeWidgetItem>
 
-class Product;
-class Client;
-class ProductManager;
-
 class Shopping : public QTreeWidgetItem
 {
 public:

@@ -85,7 +85,7 @@ TCPClient::TCPClient(QWidget *parent) : QWidget(parent), isSent(false) {
 
     // 종료 기능
     QPushButton* quitButton = new QPushButton("Log Out", this);
-    connect(quitButton, SIGNAL(clicked( )), this, SLOT(cl  ose( )));
+    connect(quitButton, SIGNAL(clicked( )), this, SLOT(close( )));
 
     QHBoxLayout *buttonLayout = new QHBoxLayout;
     buttonLayout->addWidget(fileButton);
@@ -119,6 +119,8 @@ TCPClient::TCPClient(QWidget *parent) : QWidget(parent), isSent(false) {
     connect(connectButton, &QPushButton::clicked,
             [=]{
         if(connectButton->text() == tr("Log In")) {
+            emit compareName(name->text().toStdString().data());             /*커넥트 버튼 누를 시 발송되는 시그널*/
+            qDebug() << name->text().toStdString().data();
             clientSocket->connectToHost(serverAddress->text( ),
                                         serverPort->text( ).toInt( ));
             clientSocket->waitForConnected();
@@ -141,6 +143,11 @@ TCPClient::TCPClient(QWidget *parent) : QWidget(parent), isSent(false) {
     } );
 
     setWindowTitle(tr("Chat Client"));
+}
+
+void TCPClient::receiveSignal(int num)
+{
+    result = num;
 }
 
 TCPClient::~TCPClient( )
@@ -241,17 +248,24 @@ void TCPClient::disconnect( )
 
 void TCPClient::sendProtocol(Client_Chat type, char* data, int size)
 {
-    QByteArray dataArray;           // 소켓으로 보낼 데이터를 채우고
-    QDataStream out(&dataArray, QIODevice::WriteOnly);
-    /*현재 설정된 I/O 장치를 반환하거나 현재 설정된 장치가 없으면 nullptr을 반환합니다.*/
-    out.device()->seek(0);          //버퍼를 맨앞에다가 위치
-    /*QIODevice를 서브클래싱할 때 QIODevice의 내장 버퍼와의
-     * 무결성을 보장하기 위해 함수 시작 시 QIODevice::seek()를 호출해야 합니다.*/
-    out << type;
-    out.writeRawData(data, size);
-    clientSocket->write(dataArray);     // 서버로 전송
-    clientSocket->flush();
-    while(clientSocket->waitForBytesWritten());
+    if(result == 1)
+    {
+        QByteArray dataArray;           // 소켓으로 보낼 데이터를 채우고
+        QDataStream out(&dataArray, QIODevice::WriteOnly);
+        /*현재 설정된 I/O 장치를 반환하거나 현재 설정된 장치가 없으면 nullptr을 반환합니다.*/
+        out.device()->seek(0);          //버퍼를 맨앞에다가 위치
+        /*QIODevice를 서브클래싱할 때 QIODevice의 내장 버퍼와의
+         * 무결성을 보장하기 위해 함수 시작 시 QIODevice::seek()를 호출해야 합니다.*/
+        out << type;
+        out.writeRawData(data, size);
+        clientSocket->write(dataArray);     // 서버로 전송
+        clientSocket->flush();
+        while(clientSocket->waitForBytesWritten());
+    }
+    else
+    {
+        return;
+    }
 }
 
 void TCPClient::sendData(  )

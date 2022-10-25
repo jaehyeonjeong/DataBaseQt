@@ -48,10 +48,16 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionchatting"/>
+   <addaction name="actionmanager"/>
   </widget>
   <action name="actionchatting">
    <property name="text">
     <string>chatting</string>
+   </property>
+  </action>
+  <action name="actionmanager">
+   <property name="text">
+    <string>manager</string>
    </property>
   </action>
  </widget>

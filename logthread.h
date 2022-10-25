@@ -6,14 +6,14 @@
 
 class QTreeWidgetItem;
 
-class LogThread : public QThread
+class LogThread : public QThread    //QThread 상속
 {
     Q_OBJECT
 public:
-    explicit LogThread(QObject *parent = nullptr);
+    explicit LogThread(QObject *parent = nullptr); //생성자 초기화
 
 signals:
-    void send(int data);
+    void send(int data);        //
 
 public slots:
     void appendData(QTreeWidgetItem*);

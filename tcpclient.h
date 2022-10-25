@@ -31,6 +31,10 @@ public:
     TCPClient(QWidget *parent = nullptr);
     ~TCPClient();
 
+    /*채팅방에서 없는 데이터가 채팅이 되는 오류를 방지하기 위한 시그널*/
+signals:
+    void compareName(QString);
+
 private slots:
     void receiveData( );			// 서버에서 데이터가 올 때
     void sendData( );               // 서버로 데이터를 보낼 때
@@ -38,6 +42,9 @@ private slots:
     void sendProtocol(Client_Chat, char*, int = 1020);
     void sendFile();
     void goOnSend(qint64);
+
+    /*비교하는 시그널을 받는 슬롯*/
+    void receiveSignal(int);
 
 private:
     void closeEvent(QCloseEvent*) override;
@@ -63,5 +70,8 @@ private:
     qint64 totalSize;
     QByteArray outBlock;
     bool isSent;
+
+
+    int result;
 };
 #endif // WIDGET_H
