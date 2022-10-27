@@ -43,14 +43,14 @@
      </widget>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="Inputpage">
        <property name="geometry">
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>311</width>
+         <width>314</width>
          <height>386</height>
         </rect>
        </property>
@@ -99,7 +99,11 @@
            <widget class="QLineEdit" name="CNameLineEdit"/>
           </item>
           <item row="2" column="1">
-           <widget class="QLineEdit" name="CPhoneLineEdit"/>
+           <widget class="QLineEdit" name="CPhoneLineEdit">
+            <property name="inputMask">
+             <string>999-0000-9999</string>
+            </property>
+           </widget>
           </item>
           <item row="3" column="1">
            <widget class="QLineEdit" name="CEmailLineEdit"/>
@@ -151,7 +155,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>311</width>
+         <width>314</width>
          <height>386</height>
         </rect>
        </property>

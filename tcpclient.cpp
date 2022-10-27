@@ -85,19 +85,20 @@ TCPClient::TCPClient(QWidget *parent) : QWidget(parent), isSent(false) {
     inputLayout->addWidget(inputLine);
     inputLayout->addWidget(sentButton);
 
-    fileButton = new QPushButton("File Transfer", this);
-    connect(fileButton, SIGNAL(clicked( )), SLOT(sendFile( ))); /*파일 버튼을 누를시 파일을 보내는 커넥트 함수*/
-    fileButton->setDisabled(true);  /*현재 파일 버튼은 disable 상태*/
+    //fileButton = new QPushButton("File Transfer", this);
+    //connect(fileButton, SIGNAL(clicked( )), SLOT(sendFile( ))); /*파일 버튼을 누를시 파일을 보내는 커넥트 함수*/
+    //fileButton->setDisabled(true);  /*현재 파일 버튼은 disable 상태*/
 
     findFileButton = new QPushButton("File Find", this);
     connect(findFileButton, SIGNAL(clicked()), SLOT(filereceive()));
-    fileButton->setEnabled(true);
+    findFileButton->setDisabled(true);
 
     imageButton = new QPushButton("image Find", this);          /*이미지 버튼 생성*/
     connect(imageButton, &QPushButton::clicked,                 /*람다 함수로 이미지 버튼 클릭시 이벤트 발생*/
             [=]{
         /*현재 이미지르 받은 슬옷은 파일 경로를 받고 클라이언트 채팅창에 이미지로 출력하는 기능을 구현*/
         QString filename = QFileDialog::getOpenFileName(this, "file select",
+       /*현 경로는 개발자의 디바이스에서만 연결 가능하오니 다른 디바이스를 사용하는 경우에는 경로를 필히 바꿔주기 바람*/
             "C:\\QtHardWork\\samQtProject-master\\build-Miniproject-Desktop_Qt_6_3_1_MSVC2019_64bit-Debug",
             "image file(*.png *.jpg)");                         /*jpg, png를 부르는 경로 작성*/
         QImage* Img = new QImage();                         /*이미지 변수 생성*/
@@ -122,14 +123,14 @@ TCPClient::TCPClient(QWidget *parent) : QWidget(parent), isSent(false) {
         IbView->move(100, 0);                           /*레이블을 가로로 100만큼 움직임*/
         IbView->show();                                 /*레이블 출력*/
     });   /*버튼을 클릭시 이미지를 찾는 버튼을 클릭한 시그널*/
-    imageButton->setEnabled(true);
+    imageButton->setDisabled(true);
 
     // 종료 기능
     QPushButton* quitButton = new QPushButton("Log Out", this);
     connect(quitButton, SIGNAL(clicked( )), this, SLOT(close( )));  /*종료 버튼 클릭시 해당 클라이언트는 창이 닫아짐*/
 
     QHBoxLayout *buttonLayout = new QHBoxLayout;    /*파일 버튼과 종료버튼 행정렬*/
-    buttonLayout->addWidget(fileButton);
+    //buttonLayout->addWidget(fileButton);
     buttonLayout->addWidget(findFileButton);
     buttonLayout->addWidget(imageButton);
     buttonLayout->addStretch(1);                /*공간 스프링*/
@@ -192,13 +193,17 @@ TCPClient::TCPClient(QWidget *parent) : QWidget(parent), isSent(false) {
             connectButton->setText(tr("Chat Out"));                 /*채팅을 나갈 수 있는 상태의 버튼 이름 변경*/
             inputLine->setEnabled(true);
             sentButton->setEnabled(true);
-            fileButton->setEnabled(true);                   /*버튼 및 발송 에디터의 상태 활성화*/
+            //fileButton->setEnabled(true);                   /*버튼 및 발송 에디터의 상태 활성화*/
+            findFileButton->setEnabled(true);
+            imageButton->setEnabled(true);
         } else if(connectButton->text() == tr("Chat Out"))  {
             sendProtocol(Client_Chat_Out, name->text().toStdString().data());  /*대기실 상태로 전환*/
             connectButton->setText(tr("Chat in"));                  /*채팅에 다시 들어갈 수 있는 버튼 이름 변경*/
             inputLine->setDisabled(true);
             sentButton->setDisabled(true);
-            fileButton->setDisabled(true);                   /*버튼 및 발송 에디터의 상태 비활성화*/
+            findFileButton->setEnabled(false);
+            imageButton->setEnabled(false);
+            //fileButton->setDisabled(true);                   /*버튼 및 발송 에디터의 상태 비활성화*/
         }
     } );
 
@@ -275,16 +280,20 @@ void TCPClient::receiveData( )      /*또 다른 채팅 클라이언트로 부�
             message->append(QString(data));
             inputLine->setEnabled(true);
             sentButton->setEnabled(true);
-            fileButton->setEnabled(true);
+            //fileButton->setEnabled(true);
             connectButton->setEnabled(true);
+            findFileButton->setEnabled(true);
+            imageButton->setEnabled(true);
         }
         else    /*한번 강퇴 되면 플래그가 1로 변경되어서 입력문에 채팅을 할 수 없게 됨*/
         {
             inputLine->setDisabled(true);
             inputLine->setEnabled(false);
             sentButton->setEnabled(false);
-            fileButton->setEnabled(false);
+            //fileButton->setEnabled(false);
             connectButton->setEnabled(false);
+            findFileButton->setEnabled(false);
+            imageButton->setEnabled(false);
         }
         break;
     case Client_Chat_KickOut:           /*채팅방에서 강제 퇴장 당했을 경우*/
@@ -293,7 +302,9 @@ void TCPClient::receiveData( )      /*또 다른 채팅 클라이언트로 부�
                               tr("Kick out from Server"));
         inputLine->setDisabled(true);
         sentButton->setDisabled(true);
-        fileButton->setDisabled(true);
+        //fileButton->setDisabled(true);
+        findFileButton->setEnabled(false);
+        imageButton->setEnabled(false);
         connectButton->setText("Chat in");
         connectButton->setEnabled(false);
         name->setReadOnly(false);
@@ -305,7 +316,9 @@ void TCPClient::receiveData( )      /*또 다른 채팅 클라이언트로 부�
         /*프로토콜을 보내서 챗인 상태로 전환하는 좋은 방법*/
         inputLine->setEnabled(true);
         sentButton->setEnabled(true);
-        fileButton->setEnabled(true);
+        //fileButton->setEnabled(true);
+        findFileButton->setEnabled(true);
+        imageButton->setEnabled(true);
         connectButton->setText("Chat Out");
         connectButton->setEnabled(true);
         name->setReadOnly(true);
@@ -321,6 +334,8 @@ void TCPClient::disconnect( )
     inputLine->setEnabled(false);
     name->setReadOnly(false);
     sentButton->setEnabled(false);
+    findFileButton->setEnabled(false);
+    imageButton->setEnabled(false);
     connectButton->setText(tr("Log in"));
 }
 

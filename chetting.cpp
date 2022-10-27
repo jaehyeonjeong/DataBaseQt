@@ -125,8 +125,6 @@ Chetting::Chetting(QWidget *parent) :
     connect(ui->sendButton, SIGNAL(clicked()), SLOT(sendData()));
     connect(ui->sendButton, SIGNAL(clicked()), ui->inputEdit, SLOT(clear()));
 
-
-
     connect(ui->cacelButton,
             &QPushButton::clicked,
             [=]{ui->inputEdit->setText("");});
@@ -153,12 +151,8 @@ Chetting::~Chetting()
 
 void Chetting::receiveTCPClientName(QString name)
 {
-    //    Q_UNUSED(id);
     QList<QString> list;
-    //id = ui->managerEdit->text().toInt();
-    //name = ui->IPNameEdit->text();
     list.insert(0, name);
-    //ui->listWidget->addItems(list);
 }
 
 /*tcp client and protocol*/

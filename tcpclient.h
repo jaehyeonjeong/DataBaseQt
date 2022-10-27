@@ -64,7 +64,7 @@ private:
     QLineEdit *inputLine;           // 서버로 보내는 메시지 입력용
     QPushButton *connectButton;     // 서버 로그인 등 접속 처리
     QPushButton *sentButton;        // 메시지 전송
-    QPushButton* fileButton;        // 파일 전송
+    //QPushButton* fileButton;        // 파일 전송
     QTcpSocket *clientSocket;		// 클라이언트용 소켓
 
     QPushButton *findFileButton;    //파일을 찾는 버튼
