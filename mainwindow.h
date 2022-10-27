@@ -32,6 +32,8 @@ private slots:
 
     void on_actionmanager_triggered();      //ui에서 생성된 매니저 클라이언트를 불러오는 툴바 버튼 이벤트 핸들러
 
+
+
 private:
     Ui::MainWindow *ui;         //ui변수
     ClientManager* clientmanager;   //고객관리 클래스 변수

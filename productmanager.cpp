@@ -70,11 +70,6 @@ ProductManager::~ProductManager()
     file.close( );
 }
 
-QString ProductManager::getProductName()
-{
-    return ui->PNameLineEdit->text();
-}
-
 void ProductManager::on_ProductTreeWidget_itemClicked(QTreeWidgetItem *item, int column)
 {
     Q_UNUSED(column);
@@ -96,11 +91,6 @@ int ProductManager::makeID()
         auto id = productList.lastKey();
         return ++id;
     }
-}
-
-int ProductManager::getProductPrice()
-{
-    return ui->PPriceLineEdit->text().toInt();
 }
 
 void ProductManager::showContextItem(const QPoint& pos)

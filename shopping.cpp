@@ -1,5 +1,6 @@
 #include "shopping.h"
 
+        /*QTreeWidgetItem을 상속받았기 때문에 setText(column, text)형태로 데이터를 저장*/
 Shopping::Shopping(int id, QString Client, QString Product, QString Date, int quan, int AllPrice)
 {
     setText(0, QString::number(id));
@@ -12,12 +13,12 @@ Shopping::Shopping(int id, QString Client, QString Product, QString Date, int qu
 
 int Shopping::getId()
 {
-    return text(0).toInt();
+    return text(0).toInt();     /*treeWidget column 1*/
 }
 
 QString Shopping::getClientName()
 {
-    return text(1);
+    return text(1);             /*treeWidget column 2*/
 }
 
 void Shopping::setClientName(QString& Client)
@@ -27,7 +28,7 @@ void Shopping::setClientName(QString& Client)
 
 QString Shopping::getProductName()
 {
-    return text(2);
+    return text(2);             /*treeWidget column 3*/
 }
 
 void Shopping::setProductName(QString& Product)
@@ -37,7 +38,7 @@ void Shopping::setProductName(QString& Product)
 
 QString Shopping::getDate()
 {
-    return text(3);
+    return text(3);             /*treeWidget column 4*/
 }
 
 void Shopping::setDate(QString& date)
@@ -47,7 +48,7 @@ void Shopping::setDate(QString& date)
 
 int Shopping::getquan()
 {
-    return text(4).toInt();
+    return text(4).toInt();     /*treeWidget column 5*/
 }
 
 void Shopping::setquan(int& quan)
@@ -57,7 +58,7 @@ void Shopping::setquan(int& quan)
 
 int Shopping::getAllPrice()
 {
-    return text(5).toInt();
+    return text(5).toInt();     /*treeWidget column 6*/
 }
 
 void Shopping::setAllPrice(int& price)

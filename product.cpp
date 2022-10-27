@@ -1,5 +1,6 @@
 #include "product.h"
 
+/*QTreeWidgetItem을 상속받았기 때문에 setText(column, text)형태로 데이터를 저장*/
 Product::Product(int id, QString name, QString company, int price)
 {
     setText(0, QString::number(id));
@@ -10,12 +11,12 @@ Product::Product(int id, QString name, QString company, int price)
 
 int Product::getid()
 {
-    return text(0).toInt();
+    return text(0).toInt();     /*treeWidget column 1*/
 }
 
 QString Product::getName()
 {
-    return text(1);
+    return text(1);              /*treeWidget column 2*/
 }
 void Product::setName(QString& name)
 {
@@ -24,7 +25,7 @@ void Product::setName(QString& name)
 
 QString Product::getCompany()
 {
-    return text(2);
+    return text(2);             /*treeWidget column 3*/
 }
 
 void Product::setCompany(QString& company)
@@ -34,7 +35,7 @@ void Product::setCompany(QString& company)
 
 int Product::getPrice()
 {
-    return text(3).toInt();
+    return text(3).toInt();      /*treeWidget column 4*/
 }
 
 void Product::setPrice(int& price)

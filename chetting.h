@@ -24,18 +24,7 @@ typedef enum {          /*chat state*/
     Chat_LogOut,    //로그 아웃 서버     --> 초대 불가능
     Chat_Invite,    //초대
     Chat_KickOut,   //강제퇴장
-
-    /*같은 서버에서 통신하지 않게 지워두기 1020코드수정*/
-//    Chat_FileTrasform_Start,    //파일전송시작 --> 파일오픈
-//    Chat_FileTransform,         //파일전송
-//    Chat_FileTrasform_End,      //파일전송해제 --> 파일닫기
 } StatusOfChat;
-
-/*1019 강사님 코드에는 구조체가없음*/
-//typedef struct{
-//    StatusOfChat type;
-//    char data[1020];
-//}chattingProtocol;
 
 namespace Ui {
 class Chetting;
@@ -55,11 +44,6 @@ signals:
     void TCPSignal(int, QString);
 
 private slots:
-    /*server slots*/
-//    void clientConnect();
-//    void echoData();
-//    void removeItem();
-
     /*client slots and protocol*/
     //void connectToServer( );
     void receiveData( );			// 서버에서 데이터가 올 때
@@ -73,10 +57,6 @@ private slots:
 
     /*tcp client로 받는 데이터를 리시브 할 수 있는 코드*/
     void receiveTCPClientName(QString);
-
-
-
-    //void on_listWidget_itemClicked(QListWidgetItem *item);
 
 private:
     void closeEvent(QCloseEvent*) override;

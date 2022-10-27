@@ -9,6 +9,9 @@
 
 #include <QMdiSubWindow>
 #include <QApplication>
+#include <QMessageBox>
+#include <QLabel>
+#include <QFileDialog>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -59,7 +62,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->mdiArea->addSubWindow(TcpSubWindow[1]);
     TcpSubWindow[1]->setGeometry(800, 0, 340, 380);/*매개인자 1) x좌표, 2) y좌표, 3) 위젯의 width, 4) 위젯의 height*/
 
-
     /*탭과 MDIAREA 스핀로드*/
     QList<int> list;
     list << 700 << 800;      /*메인윈도우의 전체 넓이 1500중 700은 탭 위젯, 800은 MDI위젯을 출력*/
@@ -77,11 +79,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     this->resize(1500, 840);        /*출력되는 프로젝트의 넓이와 높이를 조젛 width : 1500, height : 840*/
 
-    connect(clientmanager, SIGNAL(TCPClientAdded(int, QString)),
+    connect(clientmanager, SIGNAL(TCPClientAdded(int, QString)), /*고객관리 위젯 보내는 */
             tcpserver, SLOT(addClient(int, QString)));
     clientmanager->loadData();
 
-    connect(clientmanager, SIGNAL(ClientRemove(int)),
+    connect(clientmanager, SIGNAL(ClientRemove(int)),   /**/
             tcpserver, SLOT(removeClient(int)));
 
     connect(clientmanager, SIGNAL(TCPClientModify(int, QString,int)),
@@ -90,10 +92,7 @@ MainWindow::MainWindow(QWidget *parent)
     /*관리자 클라이언트에서 연결하는 요소는 반드시 생성자에 작성*/
     connect(chettingapp, SIGNAL(TCPSignal(int, QString)),
             tcpserver, SLOT(receiveManager(int, QString)));
-
-    /*서버로 부터 보내는 시그널 값을 클라이언트로 커넥트*/
-    connect(tcpserver, SIGNAL(compareSignal(int)),
-            tcpclient, SLOT(receiveSignal(int)));
+//
 }
 
 MainWindow::~MainWindow()
@@ -113,19 +112,24 @@ void MainWindow::on_actionchatting_triggered()
     tcpclient->move(100, 600);  //x = 100, y = 600에 위치
     tcpclient->show();
 
-    /*비교하는 시그널을 보내서 받고 treeWidget의 아이템을 비교 */
+    /*서버로 부터 보내는 시그널 값을 클라이언트로 커넥트*/
     connect(tcpclient, SIGNAL(compareName(QString)),
-            tcpserver, SLOT(compareServer(QString)));
+            tcpserver, SLOT(CheckLogIn(QString)));
+
+    connect(tcpserver, SIGNAL(SendLogInChecked(int)),
+            tcpclient, SLOT(receiveSignal(int)));
 }
 
 /*관리자용 채팅 활성화 manager 툴바 버튼 클릭 시 프로젝트 맨앞에서 출력*/
 void MainWindow::on_actionmanager_triggered()
 {
     chettingapp->setWindowFlag(Qt::WindowStaysOnTopHint);
-    chettingapp->setAttribute(Qt::WA_DeleteOnClose);
     chettingapp->setWindowTitle("manager");
     //윈도우는 항상 위에 위치
     chettingapp->move(300, 600);  //x = 300, y = 600에 위치
     chettingapp->show();
 }
+
+
+
 

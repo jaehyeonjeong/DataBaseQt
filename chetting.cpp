@@ -25,22 +25,6 @@ Chetting::Chetting(QWidget *parent) :
 {
     ui->setupUi(this);
 
-//    /*tcp_server*/
-//    tcpServer = new QTcpServer(this);
-//    tcpServer->listen(QHostAddress::Any, 8200);
-//    //connect(tcpServer, SIGNAL(newConnection()), SLOT(clientConnect()));
-//        if(!tcpServer->listen())
-//        {
-//            QMessageBox::critical(this, tr("Echo Server"),
-//                                  tr("Unable to start the server: %1.")\
-//                                  .arg(tcpServer->errorString()));
-//            close();
-//            return;
-//        }
-
-//    ui->serverstatus->setText(tr("The server is running on port %1.")
-//                              .arg(tcpServer->serverPort()));
-
     /*ipAddress 자동 할당 코드*/
     QString ipAddress;
     QNetworkInterface interface;
@@ -167,20 +151,6 @@ Chetting::~Chetting()
     settings.setValue("ChatClient/ID", ui->manager->text());
 }
 
-/*tcp server*/
-//void Chetting::echoData()
-//{
-//    QTcpSocket *clientConnection = dynamic_cast<QTcpSocket *>(sender( ));
-//    QByteArray bytearray = clientConnection->read(BLOCK_SIZE);
-//    foreach(QTcpSocket *sock, serverList) {
-//        if(sock != clientConnection)
-//            sock->write(bytearray);
-//    }
-//    ui->serverstatus->setText(QString(bytearray));
-
-//}
-
-
 void Chetting::receiveTCPClientName(QString name)
 {
     //    Q_UNUSED(id);
@@ -190,25 +160,6 @@ void Chetting::receiveTCPClientName(QString name)
     list.insert(0, name);
     //ui->listWidget->addItems(list);
 }
-
-//void Chetting::clientConnect()
-//{
-//    QTcpSocket *clientConnection = tcpServer->nextPendingConnection( );
-//    connect(clientConnection, SIGNAL(disconnected( )), \
-//            clientConnection, SLOT(deleteLater( )));
-//    connect(clientConnection, SIGNAL(readyRead( )), SLOT(echoData( )));
-//    connect(clientConnection, SIGNAL(disconnected()), SLOT(removeItem()));
-//    ui->serverstatus->setText("new connection is established...");
-
-//    serverList.append(clientConnection);        // QList<QTcpSocket*> clientList;
-//}
-
-//void Chetting::removeItem()
-//{
-//    QTcpSocket* clientConnection = dynamic_cast<QTcpSocket*>(sender());
-//    serverList.removeOne(clientConnection);
-//    clientConnection->deleteLater();
-//}
 
 /*tcp client and protocol*/
 void Chetting::closeEvent(QCloseEvent*)
@@ -383,16 +334,5 @@ void Chetting::disconnect( )
     //    close( );
 }
 
-//void Chetting::CReceiveData(QString str)
-//{
-//    ui->IPNameEdit->setText(str);
-//}
-
-
-
-//void Chetting::on_listWidget_itemClicked(QListWidgetItem *item)
-//{
-//    ui->reduceEdit->setText(item->text());
-//}
 
 

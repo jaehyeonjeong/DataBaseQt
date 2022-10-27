@@ -30,19 +30,7 @@ typedef enum {          /*chat state*/
     Server_Chat_LogOut,    //로그 아웃 서버     --> 초대 불가능
     Server_Chat_Invite,    //초대
     Server_Chat_KickOut,   //강제퇴장
-
-    /*file 송수신은 따로 설정*/
-//    Server_Chat_FileTrasform_Start,    //파일전송시작 --> 파일오픈
-//    Server_Chat_FileTransform,         //파일전송
-//    Server_Chat_FileTrasform_End,      //파일전송해제 --> 파일닫기
 } Chat_Status;
-
-
-/*1019 강사님 서버에는  구조체가 없음*/
-//typedef struct {        /*데이터를 쏠때 구조체로 데이터를 보냄*/
-//    Chat_Status type;   /*chat state의 값만 받을 수 있음*/
-//    char data[1020];
-//} chatProtocol;
 
 
 class TCPServer : public QWidget
@@ -53,8 +41,8 @@ public:
     ~TCPServer();
 
 signals:
-    /*클라이언트 데이터가 일치하는 값인지 아닌지 판단하는 시그널*/
-    void compareSignal(int);
+    void SendLogInChecked(int);     /*비교 슬롯의 데이터를 받으면 다시 클라이언트로 보내는 signal*/
+
 private slots:
     void acceptConnection();            /*파일 서버*/
     void readClient();
@@ -75,15 +63,15 @@ private slots:
     /*chetting class에 있는 데이터가 받아지는 함수*/
     void receiveManager(int, QString);
 
-    /*client data 받고 비교하는 슬롯 함수*/
-    void compareServer(QString);
-
     void inviteClient();
     void kickOut();
     //void on_clientTreeWidget_customContextMenuRequested(const QPoint &pos);
 
     /*클라이언트 데이터를 초대 및 강퇴 하기 위한 이벤트 핸들러*/
     void on_treeWidget_customContextMenuRequested(const QPoint &pos);
+
+    /*시그널을 받는 슬롯을 제작*/
+    void CheckLogIn(QString);
 
 private:
     const int BLOCK_SIZE = 1024;    /*1019 채팅 일력 제한수*/
@@ -101,8 +89,8 @@ private:
     QMenu* menu;        /*마우스 우클릭시 생성되는 메뉴창*/
 
     //    QList<QTcpSocket*> clientList;  /*같음*/
-    QHash<QString, int> oldClientIDList;
-    QHash<QString, QString> oldClientNameHash;
+//    QHash<QString, int> oldClientIDList;
+//    QHash<QString, QString> oldClientNameHash;
     //        QHash<QString, int> clientIDHash;
 
     /*아이디만 보이게끔만 설정*/

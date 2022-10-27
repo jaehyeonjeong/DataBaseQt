@@ -105,7 +105,7 @@ void TCPServer::clientConnect( )
 
 void TCPServer::receiveData()
 {
-    QTcpSocket *clientConnection = dynamic_cast<QTcpSocket *>(sender( ));
+    QTcpSocket *clientConnection = dynamic_cast<QTcpSocket *>(sender( )); //해당 소켓의 시그널을 발생시킬 객체의 포인터 지정
     QByteArray bytearray = clientConnection->read(BLOCK_SIZE);
 
     Chat_Status type;       // 채팅의 목적
@@ -118,7 +118,7 @@ void TCPServer::receiveData()
     in.readRawData(data, 1020);
 
     QString ip = clientConnection->peerAddress().toString();
-    quint16 port = clientConnection->peerPort();
+    quint64 port = clientConnection->peerPort();
     QString name = QString::fromStdString(data);
 
     qDebug() << ip << " : " << type;
@@ -256,7 +256,7 @@ void TCPServer::on_treeWidget_customContextMenuRequested(const QPoint &pos)
     {
         foreach(QAction *action, menu->actions()) {
             if(action->objectName() == "Invite")
-                action->setEnabled(ui->treeWidget->currentItem()->text(0) != "O");
+                action->setEnabled(ui->treeWidget->currentItem()->text(0) == "-");
             else
                 action->setEnabled(ui->treeWidget->currentItem()->text(0) == "O");
         }
@@ -267,6 +267,23 @@ void TCPServer::on_treeWidget_customContextMenuRequested(const QPoint &pos)
     {
         return;
     }
+}
+void TCPServer::CheckLogIn(QString name)
+{
+    auto flag = Qt::MatchFixedString;
+    int Check = 1;
+
+    if(ui->treeWidget->findItems(name, flag, 1).count() == 0)
+        /*고객 리스트에 해당되는 이름이 있는경우*/
+    {
+        // 찾는 고객명의 데이터가 없을 때
+        Check = 0;
+        emit SendLogInChecked(Check);
+    }
+        // 찾는 고객명의 데이터가 있을 때
+    else
+        emit SendLogInChecked(Check);
+
 }
 
 void TCPServer::kickOut()
@@ -300,7 +317,7 @@ void TCPServer::inviteClient()
             sock->write(sendArray);
 
             foreach(auto item, ui->treeWidget->findItems(name, Qt::MatchFixedString, 1)) {
-                if(item->text(1) != "O") {
+                if(item->text(0) != "O") {
                     item->setText(0, "O");
                 }
             }
@@ -309,36 +326,6 @@ void TCPServer::inviteClient()
             clientNameHash[port] = name;
         }
 
-    }
-}
-
-int commp = 0;
-/*비교하는 시그널을 받고 가지고있는 에디터를 비교하는 슬롯 */
-void TCPServer::compareServer(QString name)
-{
-//    int i = ui->treeWidget->currentColumn();
-//    auto flag = (i)? Qt::MatchCaseSensitive|Qt::MatchContains
-//                   : Qt::MatchCaseSensitive;
-//    {
-//        auto items = ui->treeWidget->findItems
-//                (name, flag, i);
-//        foreach(auto num, items)
-//        {
-//            if(name == nullptr)
-//                return;
-//        }
-//    }
-    int num;
-    qDebug() << ui->treeWidget->findItems(name, Qt::MatchFixedString, 1).length();
-    if(commp == ui->treeWidget->findItems(name, Qt::MatchFixedString, 1).length())
-    {
-       num = 0;
-       emit compareSignal(num);
-    }
-    else
-    {
-        num = 1;
-        emit compareSignal(num);
     }
 }
 
@@ -376,8 +363,7 @@ void TCPServer::readClient()
         item->setText(3, name);
         item->setText(4, filename);
         item->setText(5, QDateTime::currentDateTime().toString());
-        item->setToolTip(4, filename);
-
+        item->setToolTip(4, filename);      /*해당 마우스 커서를 가져다 두었을때 조그만 창으로 출력*/
         for(int i = 0; i < ui->logtreeWidget->columnCount(); i++)
             ui->logtreeWidget->resizeColumnToContents(i);
 

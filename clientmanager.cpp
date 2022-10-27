@@ -31,7 +31,7 @@ ClientManager::ClientManager(QWidget *parent) :
     //connect(this, SIGNAL(TCPClientAdded(int,QString)), this, SLOT(loadData()));
 }
 
-void ClientManager::loadData()
+void ClientManager::loadData()                  /*고객의 정보를 택스트로 저장*/
 {
     /*파일 불러오기*/
     QFile file("clientlist.txt");
@@ -44,10 +44,10 @@ void ClientManager::loadData()
         QList<QString> row = line.split(", ");
         if(row.size()) {
             int id = row[0].toInt();
-            Client* c = new Client(id, row[1], row[2], row[3]);
-            ui->ClientTreeWidget->addTopLevelItem(c);
-            clientList.insert(id, c);
-            emit TCPClientAdded(id, row[1]);
+            Client* c = new Client(id, row[1], row[2], row[3]); /*고객의 데이터를 1행의 각열로 구분 (1행 4열)*/
+            ui->ClientTreeWidget->addTopLevelItem(c);           /*고객의 정보를 리스트에 저장*/
+            clientList.insert(id, c);                           /*map을 써서 insert로 데이터를 삽입*/
+            emit TCPClientAdded(id, row[1]);                    /*채팅 서버에 해당하는 고객을 추가*/
             emit ClientAdded(row[1]);
         }
     }
@@ -60,7 +60,7 @@ ClientManager::~ClientManager()
 
     /*파일 저장*/
     QFile file("clientlist.txt");
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) /*쓰기 형태인 텍스트 텍스트형태로 파일 열기*/
         return;
 
     QTextStream out(&file);
@@ -68,28 +68,24 @@ ClientManager::~ClientManager()
         Client* c = v;
         out << c->id() << ", " << c->getName() << ", ";
         out << c->getPhoneNumber() << ", ";
-        out << c->getAddress() << "\n";
-//        emit TCPClientAdded(c->id(), c->getName());
+        out << c->getAddress() << "\n";         /*고객의 아이디, 성함, 전화번호, 주소 저장*/
     }
     file.close( );
+    //close의 반환형은 int 인데 정상적으로 파일을 닫았을 땐 0을 반환하고 그렇지 않을땐 EOF (-1)을 반환합니다.
 }
 
-//QString ClientManager::getClientName()
-//{
-//    return ui->CNameLineEdit->text();
-//}
 
-int ClientManager::makeID( )
+int ClientManager::makeID( )        /*고객의 아이디 자동 할당*/
 {
-    if(clientList.size( ) == 0) {
-        return 1;
+    if(clientList.size( ) == 0) {       /*고객의 정보에 어떤 데이터도 없을 때*/
+        return 1;                   /*ID를 1부터 시작*/
     } else {
-        auto id = clientList.lastKey();
-        return ++id;
+        auto id = clientList.lastKey();   /*고객정보중 최근 정보의 id에 접근*/
+        return ++id;                    /*최근 아이디에 + 1 연산*/
     }
 }
 
-void ClientManager::removeItem()
+void ClientManager::removeItem()                /*아이템을 제거하는 함수*/
 {
     QTreeWidgetItem* item = ui->ClientTreeWidget->currentItem();
     if(item != nullptr) {

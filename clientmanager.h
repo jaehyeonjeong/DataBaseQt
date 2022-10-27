@@ -24,10 +24,10 @@ public:
 
 
 signals:
-    void ClientAdded(QString);
-    void ClientRemove(int);
-    void TCPClientModify(int, QString, int);
-    void TCPClientAdded(int, QString);
+    void ClientAdded(QString);              /*고객의 이름정보를 구매정보 에디터에 갱신*/
+    void ClientRemove(int);                 /*고객의 정보를 삭제할 시 인덱스를 보내는 시그널 서버에서 데이터를 받고 갱신*/
+    void TCPClientModify(int, QString, int);/*고객의 정보를 수정할 시 아이디, 이름, 인덱스를 보내는 시그널 서버에서 데이터를 받고 갱신*/
+    void TCPClientAdded(int, QString);      /*고객의 정보를 추가할 시 이름만 보내는 시그널 서버에서 데이터를 받고 갱신*/
 
 
 private slots:

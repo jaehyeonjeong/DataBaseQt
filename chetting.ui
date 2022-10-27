@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>457</width>
-    <height>308</height>
+    <width>468</width>
+    <height>309</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <item>
     <widget class="QLabel" name="serverstatus">
      <property name="text">
-      <string>TextLabel</string>
+      <string>only manager chetting client</string>
      </property>
     </widget>
    </item>

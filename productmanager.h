@@ -16,10 +16,8 @@ class ProductManager : public QWidget
     Q_OBJECT
 
 public:
-    explicit ProductManager(QWidget *parent = nullptr);
+    explicit ProductManager(QWidget *parent = nullptr);     /*ProductManager생성자 초기화*/
     ~ProductManager();
-    QString getProductName();
-    int getProductPrice();
 
 signals:
     void ProductAdded(QString);
