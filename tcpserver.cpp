@@ -84,6 +84,8 @@ TCPServer::TCPServer(QWidget *parent) :
     qDebug() << tr("The server is running on port %1.").arg(tcpServer->serverPort( ));
 
     connect(ui->saveButton, SIGNAL(clicked()), logThread, SLOT(saveData()));
+
+    ui->treeWidget->setColumnHidden(2, true);
 }
 
 TCPServer::~TCPServer()
@@ -126,8 +128,9 @@ void TCPServer::receiveData()
     switch(type) {
     case Server_Chat_Login:         /*채팅방에서 로그인 버튼을 클릭시 로그인 상태로 전환되는 경우*/
         foreach(auto item, ui->treeWidget->findItems(name, Qt::MatchFixedString, 1)) {
-            if(item->text(0) != "-") {             /*대기 중이 아닌 경우는 X밖에 없음*/
-                item->setText(0, "-");              /*대기 상태 표시*/
+            if(item->text(2) != "-") {             /*대기 중이 아닌 경우는 X밖에 없음*/
+                item->setIcon(0, QIcon("loading.png"));
+                item->setText(2, "-");              /*대기 상태 표시*/
                 clientList.append(clientConnection);        // QList<QTcpSocket*> clientList;
                 clientSocketHash[name] = clientConnection;
             }
@@ -135,8 +138,9 @@ void TCPServer::receiveData()
         break;
     case Server_Chat_In:
         foreach(auto item, ui->treeWidget->findItems(name, Qt::MatchFixedString, 1)) {
-            if(item->text(0) != "O") {
-                item->setText(0, "O");
+            if(item->text(2) != "O") {
+                item->setIcon(0, QIcon("people.png"));
+                item->setText(2, "O");
             }
             clientNameHash[port] = name;
         }
@@ -180,16 +184,18 @@ void TCPServer::receiveData()
         break;
     case Server_Chat_Close:
         foreach(auto item, ui->treeWidget->findItems(name, Qt::MatchContains, 1)) {
-            if(item->text(0) != "-") {
-                item->setText(0, "-");
+            if(item->text(2) != "-") {
+                item->setIcon(0, QIcon("loading.png"));
+                item->setText(2, "-");
             }
             clientNameHash.remove(port);
         }
         break;
     case Chat_LogOut:
         foreach(auto item, ui->treeWidget->findItems(name, Qt::MatchContains, 1)) {
-            if(item->text(0) != "X") {
-                item->setText(0, "X");
+            if(item->text(2) != "X") {
+                item->setIcon(0, QIcon("disconnect.png"));
+                item->setText(2, "X");
                 clientList.removeOne(clientConnection);        // QList<QTcpSocket*> clientList;
                 clientSocketHash.remove(name);
             }
@@ -204,7 +210,8 @@ void TCPServer::removeClient()
 
     QString name = clientNameHash[clientConnection->peerPort()];
     foreach(auto item, ui->treeWidget->findItems(name, Qt::MatchContains, 1)) {
-        item->setText(0, "X");
+        item->setIcon(0, QIcon("disconnect.png"));
+        item->setText(2, "X");
     }
 
     clientList.removeOne(clientConnection);
@@ -216,8 +223,9 @@ void TCPServer::addClient(int id, QString name)
 {
     clientIDList << id;
     QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeWidget);    /*클라이언트 리스트에 있는 아이템 클래스 변수 선언*/
-    item->setText(0, "X");                      /*추가된 아이디의 현상태는 X*/
+    item->setIcon(0, QIcon("disconnect.png"));                      /*추가된 아이디의 현상태는 X*/
     item->setText(1, name);                     /*해당되는 이름으로 리스트에 추가*/
+    item->setText(2, "X");
     ui->treeWidget->addTopLevelItem(item);      /*해당되는 아이템 추가*/
     clientIDHash[name] = id;                    /*이름이 위치한 아이디 할당*/
     ui->treeWidget->resizeColumnToContents(0);  /*내용의 크기에 맞게 열의 크기를 조정합니다.*/
@@ -236,7 +244,8 @@ void TCPServer::modifyClient(int id, QString name, int index)
 {
     ui->treeWidget->takeTopLevelItem(index);
     QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeWidget);    /*할당된 아이템 삭제후*/
-    item->setText(0, "X");                              /*새로이 수정된 아이템을 추가*/
+    item->setIcon(0, QIcon("disconnect.png"));
+    item->setText(2, "X");                              /*새로이 수정된 아이템을 추가*/
     item->setText(1, name);
     ui->treeWidget->addTopLevelItem(item);
     clientIDHash[name] = id;
@@ -248,7 +257,8 @@ void TCPServer::modifyClient(int id, QString name, int index)
 void TCPServer::receiveManager(int id, QString name)
 {
     QTreeWidgetItem* item = new QTreeWidgetItem(ui->treeWidget);
-    item->setText(0, "X");
+    item->setIcon(0, QIcon("disconnect.png"));
+    item->setText(2, "X");
     item->setText(1, name);
     ui->treeWidget->addTopLevelItem(item);
     clientIDHash[name] = id;
@@ -264,10 +274,10 @@ void TCPServer::on_treeWidget_customContextMenuRequested(const QPoint &pos)
         foreach(QAction *action, menu->actions()) {
             if(action->objectName() == "Invite")
                 /*Invite라는 컨택스트 메뉴가 '-'상태일 때 활성화*/
-                action->setEnabled(ui->treeWidget->currentItem()->text(0) == "-");
+                action->setEnabled(ui->treeWidget->currentItem()->text(2) == "-");
             else
                 /*Kick out 이라는 컨택스트 메뉴가 'O'상태일 때 활성화*/
-                action->setEnabled(ui->treeWidget->currentItem()->text(0) == "O");
+                action->setEnabled(ui->treeWidget->currentItem()->text(2) == "O");
         }
         QPoint globalPos = ui->treeWidget->mapToGlobal(pos);
         menu->exec(globalPos);
@@ -307,7 +317,9 @@ void TCPServer::kickOut()
     out.writeRawData("", 1020);
     sock->write(sendArray);
 
-    ui->treeWidget->currentItem()->setText(0, "-");     /*퇴장시 대기실에 머뭄*/
+    ui->treeWidget->currentItem()->setText(2, "-");     /*퇴장시 대기실에 머뭄*/
+    ui->treeWidget->currentItem()->setIcon(0, QIcon("loading.png"));
+
 }
 
 void TCPServer::inviteClient()
@@ -327,8 +339,9 @@ void TCPServer::inviteClient()
             sock->write(sendArray);
 
             foreach(auto item, ui->treeWidget->findItems(name, Qt::MatchFixedString, 1)) {
-                if(item->text(0) != "O") {
-                    item->setText(0, "O");
+                if(item->text(2) != "O") {
+                    item->setIcon(0, QIcon("people.png"));
+                    item->setText(2, "O");
                 }
             }
 

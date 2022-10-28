@@ -9,7 +9,7 @@
 #include <QMenu>
 
 #include <QDateTimeEdit>
-#include <QDateTime>
+#include <QDate>
 
 
 ShoppingManager::ShoppingManager(QWidget *parent) :
@@ -48,8 +48,11 @@ ShoppingManager::ShoppingManager(QWidget *parent) :
     }
     file.close( );
     /*파일 불러오기 끝*/
+    QDate* date = new QDate;
+    ui->SDateLineEdit->setDate(date->currentDate());
 
-    ui->SDateLineEdit->setPlaceholderText("press yyyy-mm-dd or Enter");     /*날짜 입력 형식을 표시*/
+
+    //ui->SDateLineEdit->setPlaceholderText("press yyyy-mm-dd or Enter");     /*날짜 입력 형식을 표시*/
 
 }
 
@@ -127,7 +130,7 @@ void ShoppingManager::on_ShoppingTreeWidget_itemClicked(QTreeWidgetItem *item, i
     ui->ClientLineEdit->setPlaceholderText("choose Client Name");  /*수정을 원하는 고객의 성함을 선택하라고 알림*/
     ui->ProductLineEdit->clear();               /*상품의 이름 에디터의 데이터를 지우기*/
     ui->ProductLineEdit->setPlaceholderText("choose Product Name"); /*수정을 원하는 상품의 이름을 선택하라 알림*/
-    ui->SDateLineEdit->setText(item->text(3));          /*구매정보의 날짜를 알려주는 에디터 라인*/
+    ui->SDateLineEdit->setDate(QDate::fromString(item->text(3), "yyyy-MM-dd"));          /*구매정보의 날짜를 알려주는 에디터 라인*/
     ui->SQuanLineEdit->setText(item->text(4));          /*상품의 수량을 알려주는 에디터 라인*/
     //ui->SAllPriceLineEdit->setText(item->text(5));
     ui->SAllPriceLineEdit->setText("");                 /*상품의 가격은 상품의 이름을 선택할 시 자동으로 채워지니 빈텍스트를 출력*/
@@ -142,7 +145,7 @@ void ShoppingManager::on_InputButton_clicked()
     int quan, allprice = 0;
     client = ui->ClientLineEdit->text();
     product = ui->ProductLineEdit->text();
-    date = ui->SDateLineEdit->text();
+    date = ui->SDateLineEdit->date().toString("yyyy-MM-dd");
     quan = ui->SQuanLineEdit->text().toInt();
     allprice = ui->SAllPriceLineEdit->text().toInt() * quan;        /*총가격은 상품의 가격과 수량의 곱으로 총가격을 표시*/
     /*위의 데이터들은 텍스트 파일로 저장*/
@@ -160,7 +163,7 @@ void ShoppingManager::on_CancelButton_clicked()     /*구매 정보를 입력하
     ui->SIDLineEdit->setText("");
     ui->ClientLineEdit->setText("");
     ui->ProductLineEdit->setText("");
-    ui->SDateLineEdit->setText("");
+    //ui->SDateLineEdit->setText("");
     ui->SQuanLineEdit->setText("");
     ui->SAllPriceLineEdit->setText("");
 }
@@ -176,7 +179,7 @@ void ShoppingManager::on_ModifyButton_clicked()     /*구매 정보를 수정했
         int quan, price;
         client = ui->ClientLineEdit->text();
         product = ui->ProductLineEdit->text();
-        date = ui->SDateLineEdit->text();
+        date = ui->SDateLineEdit->date().toString("yyyy-mm-dd");
         quan = ui->SQuanLineEdit->text().toInt();
         price = ui->SAllPriceLineEdit->text().toInt() * quan;
 
@@ -221,6 +224,6 @@ void ShoppingManager::on_SDateLineEdit_returnPressed()          /*엔터키를 �
 {
     QDateTimeEdit* datetimeedit = new QDateTimeEdit(QDate::currentDate(), 0);   /*현재 날짜를 yyyy-mm-dd형태의 라인에디트로 선언*/
     //datetimeedit->setCalendarPopup(true);
-    ui->SDateLineEdit->setText(datetimeedit->text());       /*텍스트 형태의 데이터를 날짜 입력 라인에디터에 호출*/
+    //ui->SDateLineEdit->setText(datetimeedit->text());       /*텍스트 형태의 데이터를 날짜 입력 라인에디터에 호출*/
 }
 

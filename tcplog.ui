@@ -38,12 +38,17 @@
          </property>
          <column>
           <property name="text">
-           <string notr="true">ID</string>
+           <string notr="true">Icon</string>
           </property>
          </column>
          <column>
           <property name="text">
            <string>Name</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>text</string>
           </property>
          </column>
         </widget>
