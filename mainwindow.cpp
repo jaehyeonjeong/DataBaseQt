@@ -92,7 +92,8 @@ MainWindow::MainWindow(QWidget *parent)
     /*관리자 클라이언트에서 연결하는 요소는 반드시 생성자에 작성*/
     connect(chettingapp, SIGNAL(TCPSignal(int, QString)),
             tcpserver, SLOT(receiveManager(int, QString)));
-//
+
+
 }
 
 MainWindow::~MainWindow()

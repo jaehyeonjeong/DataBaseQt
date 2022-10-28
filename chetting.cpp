@@ -77,6 +77,7 @@ Chetting::Chetting(QWidget *parent) :
             sendProtocol(Chat_Login, ui->manager->text().toStdString().data());
             ui->connectButton->setText("Chat in");
             ui->manager->setReadOnly(true);
+            ui->serverstatus->setText("manager chetting Login");
         }
         else if(ui->connectButton->text() == tr("Chat in"))
         {
@@ -85,6 +86,7 @@ Chetting::Chetting(QWidget *parent) :
             ui->inputEdit->setEnabled(true);
             ui->sendButton->setEnabled(true);
             ui->FileSendButton->setEnabled(true);
+            ui->serverstatus->setText("manager chetting in");
         }
         else if(ui->connectButton->text() == tr("Chat Out"))
         {
@@ -93,6 +95,7 @@ Chetting::Chetting(QWidget *parent) :
             ui->inputEdit->setDisabled(true);
             ui->sendButton->setDisabled(true);
             ui->FileSendButton->setDisabled(true);
+            ui->serverstatus->setText("manager chetting out");
         }
     });
 
@@ -136,6 +139,11 @@ Chetting::Chetting(QWidget *parent) :
     connect(clientSocket, SIGNAL(disconnected()), SLOT(disconnect()));
 
     //ui->IPNameEdit->setText("No names");
+
+    ui->manager->setReadOnly(true);
+
+    //해당 윈도우의 닫기 버튼을 비활성화 하는 함수
+    //setWindowFlags(Qt::WindowTitleHint | Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
 }
 
 Chetting::~Chetting()
@@ -300,31 +308,34 @@ void Chetting::sendProtocol(StatusOfChat type, char* data, int size)
     while(clientSocket->waitForBytesWritten());
 }
 
-void Chetting::goOnSend(qint64 numBytes) // Start sending file content
+void Chetting::goOnSend(qint64 numBytes) //파일 보내기 시작
 {
-    byteToWrite -= numBytes; // Remaining data size
+    byteToWrite -= numBytes; // 남은 데이터의 크기
     outBlock = file->read(qMin(byteToWrite, numBytes));
     fileSocket->write(outBlock);
 
     progressDialog->setMaximum(totalSize);
     progressDialog->setValue(totalSize-byteToWrite);
 
-    if (byteToWrite == 0) { // Send completed
+    if (byteToWrite == 0) { // 데이터를 모두 보냈을 경우
         qDebug("File sending completed!");
         progressDialog->reset();
     }
 }
 
-void Chetting::disconnect( )
+void Chetting::disconnect( )            /*관리자 채팅 클라이언트의 접속이 단절 되었을 때*/
 {
-    QMessageBox::critical(this, tr("Chatting Client"), \
-                          tr("Disconnect from Server"));
+    QMessageBox::critical(this, tr("manager Client"), \
+                          tr("Disconnect from Server"));        /*위험 메세지 출력*/
     ui->inputEdit->setEnabled(false);
     ui->manager->setReadOnly(false);
     ui->sendButton->setEnabled(false);
+    ui->FileSendButton->setEnabled(false);          /*다시 접속했을 때는 비활성 모드로 변경*/
 
     /*커넥트 버튼 상태 추가*/
-    ui->connectButton->setText(tr("Log in"));
+    ui->connectButton->setText(tr("Log In"));       /*로그인이 가능하도록 하는 버튼 활성화*/
+    ui->serverstatus->setText("only manager chetting client");
+    emit signalClient(0, ui->manager->text().toStdString().data());
     //    close( );
 }
 

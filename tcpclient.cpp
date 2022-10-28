@@ -307,7 +307,7 @@ void TCPClient::receiveData( )      /*또 다른 채팅 클라이언트로 부�
         imageButton->setEnabled(false);
         connectButton->setText("Chat in");
         connectButton->setEnabled(false);
-        name->setReadOnly(false);
+        name->setReadOnly(true);
         break;
     case Client_Chat_Invite:            /*채팅방에서 다시 채팅에 초대 되었을 경우*/
         flag = 0;                   /*flag를 0으로 설정*/
@@ -368,14 +368,14 @@ void TCPClient::sendData(  )            /*데이터를 보내는 함수*/
 
 void TCPClient::goOnSend(qint64 numBytes) // 파일 내용 보내기 시작
 {
-    byteToWrite -= numBytes; // Remaining data size
+    byteToWrite -= numBytes; // 남는 데이터 사이즈
     outBlock = file->read(qMin(byteToWrite, numBytes));
     fileClient->write(outBlock);
 
     progressDialog->setMaximum(totalSize);
     progressDialog->setValue(totalSize-byteToWrite);
 
-    if (byteToWrite == 0) { // Send completed
+    if (byteToWrite == 0) { // 파일을 모두 전송했을 시
         qDebug("File sending completed!");
         progressDialog->reset();
     }

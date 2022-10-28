@@ -63,6 +63,7 @@ private slots:
     /*chetting class에 있는 데이터가 받아지는 함수*/
     void receiveManager(int, QString);
 
+
     void inviteClient();
     void kickOut();
     //void on_clientTreeWidget_customContextMenuRequested(const QPoint &pos);

@@ -77,7 +77,7 @@ void ProductManager::on_ProductTreeWidget_itemClicked(QTreeWidgetItem *item, int
     ui->PNameLineEdit->setText(item->text(1));
     ui->PCompanyLineEdit->setText(item->text(2));
     ui->PPriceLineEdit->setText(item->text(3));
-    ui->toolBox->setCurrentIndex(0);
+    ui->toolBox->setCurrentIndex(0);        /*아이템클릭시 툴박스의 위치를 input으로 설정*/
 }
 
 int ProductManager::makeID()

@@ -42,6 +42,7 @@ public:
 
 signals:
     void TCPSignal(int, QString);
+    void signalClient(int, QString);
 
 private slots:
     /*client slots and protocol*/
