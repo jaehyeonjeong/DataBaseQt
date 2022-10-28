@@ -125,7 +125,7 @@ void ClientManager::on_InputButton_clicked()        /*input버튼 클릭 시 발
 }
 
 
-void ClientManager::on_CancelButton_clicked()
+void ClientManager::on_CancelButton_clicked()       /*고객 관리 정보 에디터의 모든 라인 에디터를 비워주는 버튼 슬롯*/
 {
     ui->CIDLineEdit->setText("");
     ui->CNameLineEdit->setText("");
@@ -133,22 +133,22 @@ void ClientManager::on_CancelButton_clicked()
     ui->CEmailLineEdit->setText("");
 }
 
-void ClientManager::on_ModifyButton_clicked()
+void ClientManager::on_ModifyButton_clicked()           /*고객 관리 데이터를 수정하기 위한 버튼 슬롯*/
 {
-    QTreeWidgetItem* item = ui->ClientTreeWidget->currentItem();
+    QTreeWidgetItem* item = ui->ClientTreeWidget->currentItem();    /*고객의 트리 리스트의 아이템을 할당*/
     if(item != nullptr) {
-        int index = ui->ClientTreeWidget->currentIndex().row();
-        int key = item->text(0).toInt();
-        Client* c = clientList[key];
+        int index = ui->ClientTreeWidget->currentIndex().row();     /*인덱스 값은 할당된 아이템의 1행 부분*/
+        int key = item->text(0).toInt();                /*id가 고객정보의 키가 되어버림 */
+        Client* c = clientList[key];                    /*고객 관리 데이터의 key값 할당*/
         QString name, number, address;
-        name = ui->CNameLineEdit->text();
+        name = ui->CNameLineEdit->text();               /*QString 타입으로 지정된 변수의 라인에디터 변수 재선언*/
         number = ui->CPhoneLineEdit->text();
         address = ui->CEmailLineEdit->text();
-        c->setName(name);
+        c->setName(name);                               /*이름, 전화번호, 이메일 수정*/
         c->setPhoneNumber(number);
         c->setAddress(address);
         clientList[key] = c;
-        emit TCPClientModify(key, name, index);
+        emit TCPClientModify(key, name, index);         /*고객의 데이터를 수정할 시 서버의 클라이언트 리스트 에도 수정*/
     }
 }
 
@@ -168,13 +168,13 @@ void ClientManager::on_ClientTreeWidget_itemClicked(QTreeWidgetItem *item, int c
 
 void ClientManager::on_SearchButton_clicked()
 {
-    ui->ClientSearchTree->clear();
-    int i = ui->SearchComboBox->currentIndex();
-    auto flag = (i)? Qt::MatchCaseSensitive|Qt::MatchContains
-                   : Qt::MatchCaseSensitive;
-    {
+    ui->ClientSearchTree->clear();                      /*검색 리스트를 클리어*/
+    int i = ui->SearchComboBox->currentIndex();         /*검색 리스트의 인덱스를 할당*/
+    auto flag = (i)? Qt::MatchCaseSensitive|Qt::MatchContains      /*매칭의 조건 옵션 추가*/
+                   : Qt::MatchCaseSensitive;            /*Qt::MatchCaseSensitive : 대소문자 구분*/
+    {                                                   /*Qt::MatchContains : 검색어가 항목에 포함되어 있는지를 구분*/
         auto items = ui->ClientTreeWidget->findItems
-                (ui->SearchLineEdit->text(), flag, i);
+                (ui->SearchLineEdit->text(), flag, i);  /*검색 옵션에 맞는 정보를 컬럼별로 찾음*/
 
         foreach(auto i, items) {
             Client* c = static_cast<Client*>(i);
@@ -188,7 +188,7 @@ void ClientManager::on_SearchButton_clicked()
     }
 }
 
-
+/*검색 리스트의 해당 아이템을 클릭 하면 고객의 성함을 에디터에 연결*/
 void ClientManager::on_ClientSearchTree_itemClicked(QTreeWidgetItem *item, int column)
 {
     Q_UNUSED(column);
