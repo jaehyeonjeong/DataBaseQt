@@ -40,6 +40,9 @@ private:
     int makeID();
     QMap<int, Product*>productList;
     QMenu* menu;
+
+    /*프로덕트 용 데이터 베이스 확인 함수*/
+    static bool productDataConnection( );
 };
 
 #endif // PRODUCTMANAGER_H

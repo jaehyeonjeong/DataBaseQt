@@ -1,3 +1,4 @@
+
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
@@ -13,6 +14,7 @@ class QTcpSocket;       //7
 class tcplog;           //8  /*mainwindow.cpp에 들어갈 클래스 8개 추가*/
 
 class QMdiSubWindow;            /*mainwinodw.cpp 파일에 듫어갈 서브 윈도우*/
+class QSqlQueryModel;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }      //ui지원
@@ -32,7 +34,11 @@ private slots:
 
     void on_actionmanager_triggered();      //ui에서 생성된 매니저 클라이언트를 불러오는 툴바 버튼 이벤트 핸들러
 
+    int on_actionclientDB_triggered();
 
+    int on_actionproductDB_triggered();
+
+    int on_actionshoppingDB_triggered();
 
 private:
     Ui::MainWindow *ui;         //ui변수
@@ -46,5 +52,7 @@ private:
 
     QMdiSubWindow* subWindow;   //MDI에서 구매정보를 불러오는 서브 윈도우 클래스 변수
     QMdiSubWindow* TcpSubWindow[2]; //MDI에서 2개 더 추가할 서브윈도우 클래스 변수
+
+    QSqlQueryModel* queryModel;
 };
 #endif // MAINWINDOW_H

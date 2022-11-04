@@ -13,6 +13,28 @@
 #include <QLabel>
 #include <QFileDialog>
 
+/*Oracle SQL 연동을 위한 헤더*/
+#include <QTableView>
+#include <QSqlQueryModel>
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QSqlError>
+
+static bool createConnection( )     /*데이터 베이스 연결 확인*/
+{
+    QSqlDatabase db = QSqlDatabase::addDatabase("QODBC");   /*추가하려는 데이터베이스 종류는 QODBC(Qt Oracle DataBase)*/
+    db.setDatabaseName("Oracle11g");            /*데이터베이스 이름*/
+    db.setUserName("projectDB");                /*데이터 베이스 계정 명*/
+    db.setPassword("1234");                     /*데이터 베이스 비밀번호*/
+    if (!db.open()) {
+        qDebug() << db.lastError().text();
+    } else {
+        qDebug("success");
+    }
+
+    return true;
+}
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -37,7 +59,7 @@ MainWindow::MainWindow(QWidget *parent)
     subWindow->setWidget(shoppingmanager);      /*구매정보관리 Ui 위젯으로 세팅*/
     subWindow->setAttribute(Qt::WA_DeleteOnClose);  /*창 속성을 Qt::WA_DeleteOnClose로 설정하여 Qt가 창을 닫는 즉시 메모리에서 창 삭제를 처리하도록 합니다.*/
     subWindow->setWindowTitle("Shopping Window");
-    subWindow->setGeometry(0, 0, 800, 400);      /*매개인자 1) x좌표, 2) y좌표, 3) 위젯의 width, 4) 위젯의 height*/
+    subWindow->setGeometry(0, 0, 800, 390);      /*매개인자 1) x좌표, 2) y좌표, 3) 위젯의 width, 4) 위젯의 height*/
     subWindow->setWindowFlags(/*Qt::WindowTitleHint|Qt::WindowMinimizeButtonHint*/
                               Qt::FramelessWindowHint); /*MDI에서 생성되는 윈도우의 축소/확대/닫기 버튼을 보이지 않게 함.*/
     ui->mdiArea->addSubWindow(subWindow);        /*MDI에 서브 윈도우 추가*/
@@ -50,7 +72,7 @@ MainWindow::MainWindow(QWidget *parent)
     TcpSubWindow[0]->setWindowFlags(/*Qt::WindowTitleHint|Qt::WindowMinimizeButtonHint*/
                                     Qt::FramelessWindowHint);
     ui->mdiArea->addSubWindow(TcpSubWindow[0]);
-    TcpSubWindow[0]->setGeometry(0, 400, 800, 380);/*매개인자 1) x좌표, 2) y좌표, 3) 위젯의 width, 4) 위젯의 height*/
+    TcpSubWindow[0]->setGeometry(0, 390, 800, 390);/*매개인자 1) x좌표, 2) y좌표, 3) 위젯의 width, 4) 위젯의 height*/
 
     /*고객 윈도우 그러나 프로젝트를 출력하면 보이지 않음 메인윈도우를 늘려야지 볼 수 있음*/
     TcpSubWindow[1] = new QMdiSubWindow;
@@ -78,6 +100,8 @@ MainWindow::MainWindow(QWidget *parent)
             shoppingmanager, SLOT(PreceivePrice(QString))); /*상품의 가격 신호를 받아 구매정보 위젯에 상품의 가격을 갱신*/
 
     this->resize(1500, 840);        /*출력되는 프로젝트의 넓이와 높이를 조젛 width : 1500, height : 840*/
+    this->setMaximumWidth(1500);    /*Mdi의 남는 영역이 보이지 않도록 최대 넓이 지정*/
+    this->setMaximumHeight(840);    /*Mdi의 남는 영역이 보이지 않도록 최대 높이 지정*/
 
     connect(clientmanager, SIGNAL(TCPClientAdded(int, QString)), /*고객관리 위젯 보내는 */
             tcpserver, SLOT(addClient(int, QString)));
@@ -133,4 +157,61 @@ void MainWindow::on_actionmanager_triggered()
 
 
 
+
+int MainWindow::on_actionclientDB_triggered()
+{
+    /*고객 데이터베이스가 연결되지 않았을 경우*/
+    if (!createConnection( )) return 1;
+
+    queryModel = new QSqlQueryModel;
+    queryModel->setQuery("select c_id, c_name, c_phone, c_email from CUST order by c_id asc");    /*고객 데이터베이스 출력 쿼리문*/
+    queryModel->setHeaderData(0, Qt::Horizontal, QObject::tr("c_id"));
+    queryModel->setHeaderData(1, Qt::Horizontal, QObject::tr("c_name"));
+    queryModel->setHeaderData(2, Qt::Horizontal, QObject::tr("c_phone"));
+    queryModel->setHeaderData(3, Qt::Horizontal, QObject::tr("c_email"));
+
+    QTableView *tableview = new QTableView;
+    tableview->setModel(queryModel);
+    tableview->setWindowTitle(QObject::tr("Query Model"));
+    tableview->show( );
+}
+
+
+int MainWindow::on_actionproductDB_triggered()
+{
+    if (!createConnection( )) return 1;
+
+    queryModel = new QSqlQueryModel;
+    queryModel->setQuery("select g_id, g_name, g_com, g_price from GOODS order by g_id asc");    /*상품 데이터베이스 출력 쿼리문*/
+    queryModel->setHeaderData(0, Qt::Horizontal, QObject::tr("g_id"));
+    queryModel->setHeaderData(1, Qt::Horizontal, QObject::tr("g_name"));
+    queryModel->setHeaderData(2, Qt::Horizontal, QObject::tr("g_com"));
+    queryModel->setHeaderData(3, Qt::Horizontal, QObject::tr("g_price"));
+
+    QTableView *tableview = new QTableView;
+    tableview->setModel(queryModel);
+    tableview->setWindowTitle(QObject::tr("Query Model"));
+    tableview->show( );
+}
+
+
+int MainWindow::on_actionshoppingDB_triggered()
+{
+    if (!createConnection( )) return 1;
+
+    queryModel = new QSqlQueryModel;
+    queryModel->setQuery("select o_id, c_name, g_name, o_date, o_quan, o_allprice from ORDERS order by o_id asc");    /*상품 데이터베이스 출력 쿼리문*/
+    queryModel->setHeaderData(0, Qt::Horizontal, QObject::tr("o_id"));
+    queryModel->setHeaderData(1, Qt::Horizontal, QObject::tr("c_name"));
+    queryModel->setHeaderData(2, Qt::Horizontal, QObject::tr("g_name"));
+    queryModel->setHeaderData(3, Qt::Horizontal, QObject::tr("o_date"));
+    queryModel->setHeaderData(4, Qt::Horizontal, QObject::tr("o_quan"));
+    queryModel->setHeaderData(5, Qt::Horizontal, QObject::tr("o_allprice"));
+
+
+    QTableView *tableview = new QTableView;
+    tableview->setModel(queryModel);
+    tableview->setWindowTitle(QObject::tr("Query Model"));
+    tableview->show( );
+}
 

@@ -6,6 +6,14 @@
 #include <QMenu>
 #include <iostream>
 
+/*Oracle SQL 연동을 위한 헤더*/
+#include <QTableView>
+#include <QSqlQueryModel>
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QSqlError>
+
+
 using namespace std;
 
 ClientManager::ClientManager(QWidget *parent) :
@@ -29,7 +37,6 @@ ClientManager::ClientManager(QWidget *parent) :
             this, SIGNAL(ClientAdded(QString)));
 
     ui->CPhoneLineEdit->setCursorPosition(1);
-
     //connect(this, SIGNAL(TCPClientAdded(int,QString)), this, SLOT(loadData()));
 }
 
@@ -54,6 +61,10 @@ void ClientManager::loadData()                  /*고객의 정보를 택스트�
         }
     }
     file.close( );
+
+//    QModelIndex i = ui->ClientTreeWidget->currentIndex();
+//    ui->ClientTreeWidget->setRowHidden(0, i, true);
+//    ui->ClientTreeWidget->setRowHidden(1, i, true);
 }
 
 ClientManager::~ClientManager()
@@ -66,6 +77,7 @@ ClientManager::~ClientManager()
         return;
 
     QTextStream out(&file);
+    //out << "clientID, clientName, clientPhone, clientEmail\n";
     for (const auto& v : clientList) {
         Client* c = v;
         out << c->id() << ", " << c->getName() << ", ";
@@ -76,6 +88,21 @@ ClientManager::~ClientManager()
     //close의 반환형은 int 인데 정상적으로 파일을 닫았을 땐 0을 반환하고 그렇지 않을땐 EOF (-1)을 반환합니다.
 }
 
+/*database에 연동이 되는지 확인하는 함수*/
+bool ClientManager::clientDataConnection()
+{
+    QSqlDatabase db = QSqlDatabase::addDatabase("QODBC");   /*추가하려는 데이터베이스 종류는 QODBC(Qt Oracle DataBase)*/
+    db.setDatabaseName("Oracle11g");            /*데이터베이스 이름*/
+    db.setUserName("projectDB");                /*데이터 베이스 계정 명*/
+    db.setPassword("1234");                     /*데이터 베이스 비밀번호*/
+    if (!db.open()) {
+        qDebug() << db.lastError().text();
+    } else {
+        qDebug("success");
+    }
+
+    return true;
+}
 
 int ClientManager::makeID( )        /*고객의 아이디 자동 할당*/
 {
@@ -97,7 +124,11 @@ void ClientManager::removeItem()                /*아이템을 제거하는 함�
                 (ui->ClientTreeWidget->indexOfTopLevelItem(item));
         ui->ClientTreeWidget->update();                 /*최신화*/
         emit ClientRemove(index);                   /*인덱스 값을 시그널로 보냄*/
+
     }
+    if (!clientDataConnection( )) return;           /*고객 데이터베이스에 접근하지 못한 경우*/
+    QSqlQueryModel queryModel;
+    queryModel.setQuery(QString("CALL DELETE_CUST(%1)").arg(item->text(0).toInt()));     /*데이터 베이스에서 삭제할 고객 정보*/
 }
 
 void ClientManager::showContextMenu(const QPoint &pos)      /*컨택스트 메뉴*/
@@ -122,6 +153,12 @@ void ClientManager::on_InputButton_clicked()        /*input버튼 클릭 시 발
         emit TCPClientAdded(id, name);
         emit ClientAdded(name);
     }
+
+    /*고객 데이터베이스가 연결되지 않았을 경우*/
+    if (!clientDataConnection( )) return;
+
+    QSqlQueryModel queryModel;
+    queryModel.setQuery(QString("CALL INSERT_CUST(%1, '%2', '%3', '%4')").arg(id).arg(name).arg(number).arg(address));     /*고객 정보로 들어갈 데이터*/
 }
 
 
@@ -149,6 +186,11 @@ void ClientManager::on_ModifyButton_clicked()           /*고객 관리 데이�
         c->setAddress(address);
         clientList[key] = c;
         emit TCPClientModify(key, name, index);         /*고객의 데이터를 수정할 시 서버의 클라이언트 리스트 에도 수정*/
+
+        if (!clientDataConnection( )) return;           /*고객 데이터베이스에 접근하지 못한 경우*/
+        QSqlQueryModel queryModel;
+        queryModel.setQuery(QString("CALL UPDATE_CUST(%1, '%2', '%3', '%4')")
+                            .arg(key).arg(name).arg(number).arg(address));     /*데이터 베이스에서 수정할 고객 정보*/
     }
 }
 

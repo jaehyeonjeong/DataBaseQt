@@ -44,6 +44,10 @@ private:
     QMap<int, Shopping*>shoppingList;
     QMenu* menu;
     int makeId();
+
+
+    /*구매 정보 용 데이터 베이스 확인 함수*/
+    static bool shoppingDataConnection( );
 };
 
 #endif // SHOPPINGMANAGER_H

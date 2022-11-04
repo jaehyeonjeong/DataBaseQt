@@ -224,19 +224,22 @@ void TCPClient::filereceive()
 {
     QString filename = QFileDialog::getOpenFileName(this, "file select",
         "C:\\QtHardWork\\samQtProject-master\\build-Miniproject-Desktop_Qt_6_3_1_MSVC2019_64bit-Debug",
-        "Text file(*.text *.txt *.html *.htm *.c *.cpp *.h)");
+        "Text file(*.text *.txt)");
     qDebug() << filename;               /*콘솔에서만 파일을 출력하게끔 만들고 다른 방법이 있는지 확인*/
 
     QFileInfo fileInfo(filename);
     if(fileInfo.isReadable())               /*읽을 수 있는 파일인지 확인*/
     {
         QFile* file = new QFile(filename);
-        file->open(QIODevice::ReadOnly | QIODevice::Text); /*text를 읽기 형태로 불러드림*/
+        file->open(QIODevice::ReadOnly);        /*파일을 읽기 형태로 불러드림*/
         QByteArray msg = file->readAll();       /*텍스트 파일 전체를 읽어 드림*/
         file->close();                          /*정상적으로 파일을 닫았을 시 0*/
                                                 /*그렇지 않을 시 EOF(-1)을 반환*/
+        fileText->wordWrapMode();
+
         delete file;
         fileText->setHtml(msg);
+
     }
     else
     {

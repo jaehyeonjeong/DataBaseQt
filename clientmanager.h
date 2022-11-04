@@ -47,6 +47,9 @@ private:
     int makeID();                                       /*아이디 할당 변수*/
     QMap<int, Client*> clientList;                      /*맵 형태 고객 리스트 변수*/
     QMenu* menu;                                        /*메뉴 변수*/
+
+    /*클라이언트 용 데이터 베이스 확인 함수*/
+    static bool clientDataConnection( );
 };
 
 #endif // CLIENTMANAGER_H

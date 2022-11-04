@@ -5,6 +5,13 @@
 #include <QFile>
 #include <QMenu>
 
+/*Oracle SQL 연동을 위한 헤더*/
+#include <QTableView>
+#include <QSqlQueryModel>
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QSqlError>
+
 
 /*고객 관리 프로파일과 거의 동일한 기능을 수행*/
 ProductManager::ProductManager(QWidget *parent) :
@@ -51,6 +58,9 @@ ProductManager::ProductManager(QWidget *parent) :
         }
     }
     file.close( );
+//    QModelIndex i = ui->ProductTreeWidget->currentIndex();
+//    ui->ProductTreeWidget->setRowHidden(0, i, true);
+//    ui->ProductTreeWidget->setRowHidden(1, i, true);
 }
 
 ProductManager::~ProductManager()
@@ -63,6 +73,7 @@ ProductManager::~ProductManager()
         return;
 
     QTextStream out(&file);             /*파일을 읽을 수 있는 데이터의 흐름*/
+    //out << "productID, productName, productCompany, productPrice\n";
     for (const auto& v : productList) {     /*리스트로 정열된 상품의 정보 나열*/
         Product* c = v;
         out << c->getid() << ", " << c->getName() << ", ";
@@ -70,6 +81,22 @@ ProductManager::~ProductManager()
         out << c->getPrice() << "\n";
     }
     file.close( );
+}
+
+/*database에 연동이 되는지 확인하는 함수*/
+bool ProductManager::productDataConnection()
+{
+    QSqlDatabase db = QSqlDatabase::addDatabase("QODBC");   /*추가하려는 데이터베이스 종류는 QODBC(Qt Oracle DataBase)*/
+    db.setDatabaseName("Oracle11g");            /*데이터베이스 이름*/
+    db.setUserName("projectDB");                /*데이터 베이스 계정 명*/
+    db.setPassword("1234");                     /*데이터 베이스 비밀번호*/
+    if (!db.open()) {
+        qDebug() << db.lastError().text();
+    } else {
+        qDebug("success");
+    }
+
+    return true;
 }
 
 /*수정하고 싶은 아이템을 클릭하였을 때*/
@@ -112,6 +139,9 @@ void ProductManager::removeItem()
                 (ui->ProductTreeWidget->indexOfTopLevelItem(item));
         ui->ProductTreeWidget->update();
     }
+    if (!productDataConnection( )) return;           /*고객 데이터베이스에 접근하지 못한 경우*/
+    QSqlQueryModel queryModel;
+    queryModel.setQuery(QString("CALL DELETE_GOOD(%1)").arg(item->text(0).toInt()));     /*데이터 베이스에서 삭제할 상품 정보*/
 }
 
 
@@ -130,6 +160,12 @@ void ProductManager::on_InputButton_clicked()
         ui->ProductTreeWidget->addTopLevelItem(p);
         emit ProductAdded(name);
     }
+
+    /*상품 데이터베이스가 연결되지 않았을 경우*/
+    if (!productDataConnection( )) return;
+
+    QSqlQueryModel queryModel;
+    queryModel.setQuery(QString("CALL INSERT_GOOD(%1, '%2', '%3', %4)").arg(id).arg(name).arg(company).arg(price));     /*상품 정보로 들어갈 데이터*/
 }
 
 /*상품의 정보를 입력하다가 에디터에 있는데이터를 모두 지우는 경우*/
@@ -157,6 +193,11 @@ void ProductManager::on_ModifyButton_clicked()
         p->setCompany(company);
         p->setPrice(price);
         productList[key] = p;
+
+        if (!productDataConnection( )) return;           /*고객 데이터베이스에 접근하지 못한 경우*/
+        QSqlQueryModel queryModel;
+        queryModel.setQuery(QString("CALL UPDATE_GOOD(%1, '%2', '%3', %4)")
+                            .arg(key).arg(name).arg(company).arg(price));     /*데이터 베이스에서 수정할 고객 정보*/
     }
 }
 

@@ -11,6 +11,14 @@
 #include <QDateTimeEdit>
 #include <QDate>
 
+/*Oracle SQL 연동을 위한 헤더*/
+#include <QTableView>
+#include <QSqlQueryModel>
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QSqlError>
+
+
 
 ShoppingManager::ShoppingManager(QWidget *parent) :
     QWidget(parent),
@@ -53,7 +61,9 @@ ShoppingManager::ShoppingManager(QWidget *parent) :
 
 
     //ui->SDateLineEdit->setPlaceholderText("press yyyy-mm-dd or Enter");     /*날짜 입력 형식을 표시*/
-
+//    QModelIndex i = ui->ShoppingTreeWidget->currentIndex();
+//    ui->ShoppingTreeWidget->setRowHidden(0, i, true);
+//    ui->ShoppingTreeWidget->setRowHidden(1, i, true);
 }
 
 ShoppingManager::~ShoppingManager()
@@ -67,6 +77,7 @@ ShoppingManager::~ShoppingManager()
 
     /*나중에 콤보박스로 데이터를 넣을 때 이방식을 적용해보자*/
     QTextStream out(&file);
+    //out << "shoppingID, clientName, productName, Date, quan, AllPrice\n";
     for (const auto& v : shoppingList) {
         Shopping* s = v;
         out << s->getId() << ", " << s->getClientName() << ", ";
@@ -77,6 +88,22 @@ ShoppingManager::~ShoppingManager()
     }
     file.close( );
 }
+
+bool ShoppingManager::shoppingDataConnection( )
+{
+    QSqlDatabase db = QSqlDatabase::addDatabase("QODBC");   /*추가하려는 데이터베이스 종류는 QODBC(Qt Oracle DataBase)*/
+    db.setDatabaseName("Oracle11g");            /*데이터베이스 이름*/
+    db.setUserName("projectDB");                /*데이터 베이스 계정 명*/
+    db.setPassword("1234");                     /*데이터 베이스 비밀번호*/
+    if (!db.open()) {
+        qDebug() << db.lastError().text();
+    } else {
+        qDebug("success");
+    }
+
+    return true;
+}
+
 
 void ShoppingManager::CreceiveData( QString str)
 {
@@ -103,6 +130,7 @@ int ShoppingManager::makeId( )          /*아이디 자동 할당*/
     }
 }
 
+
 void ShoppingManager::showContextMenu(const QPoint& pos)        /*컨택스트 메뉴 슬롯*/
 {
     QPoint globalPos = ui->ShoppingTreeWidget->mapToGlobal(pos);    /*매개인자 우클릭 시 위치대로 메뉴를 생성하게 하는 방향 선언*/
@@ -119,6 +147,10 @@ void ShoppingManager::removeItem()              /*우클릭 시 삭제할 정보
                 (ui->ShoppingTreeWidget->indexOfTopLevelItem(item)); /*구매 정보 리스트에서 제거됨*/
         ui->ShoppingTreeWidget->update();                   /*이후 구매정보 최신화*/
     }
+
+    if (!shoppingDataConnection( )) return;           /*구매 정보 데이터베이스에 접근하지 못한 경우*/
+    QSqlQueryModel queryModel;
+    queryModel.setQuery(QString("CALL DELETE_ORDERS(%1)").arg(item->text(0).toInt()));     /*데이터 베이스에서 삭제할 구매 정보*/
 }
 
 /*수정하고자 하는 구매정보 리스트를 클릭하여 하단과 같이 해당 정보를 입력*/
@@ -155,6 +187,13 @@ void ShoppingManager::on_InputButton_clicked()
         shoppingList.insert(id, s);
         ui->ShoppingTreeWidget->addTopLevelItem(s);
     }
+
+    /*구매 정보 데이터베이스가 연결되지 않았을 경우*/
+    if (!shoppingDataConnection( )) return;
+
+    QSqlQueryModel queryModel;
+    queryModel.setQuery(QString("CALL INSERT_ORDERS(%1, '%2', '%3', %4)").arg(id).arg(client).arg(product).arg(quan));
+    /*구매 정보데이터 베이스로 들어갈 데이터*/
 }
 
 
@@ -179,7 +218,7 @@ void ShoppingManager::on_ModifyButton_clicked()     /*구매 정보를 수정했
         int quan, price;
         client = ui->ClientLineEdit->text();
         product = ui->ProductLineEdit->text();
-        date = ui->SDateLineEdit->date().toString("yyyy-mm-dd");
+        date = ui->SDateLineEdit->date().toString("yyyy-MM-dd");        /*날짜 업데이트*/
         quan = ui->SQuanLineEdit->text().toInt();
         price = ui->SAllPriceLineEdit->text().toInt() * quan;
 
@@ -190,6 +229,11 @@ void ShoppingManager::on_ModifyButton_clicked()     /*구매 정보를 수정했
         s->setquan(quan);
         s->setAllPrice(price);
         shoppingList[key] = s;
+
+        if (!shoppingDataConnection( )) return;           /*구매 정보 데이터베이스에 접근하지 못한 경우*/
+        QSqlQueryModel queryModel;
+        queryModel.setQuery(QString("CALL UPDATE_ORDERS(%1, '%2', '%3', %4)")
+                            .arg(key).arg(client).arg(product).arg(quan));     /*데이터 베이스에서 수정할 고객 정보*/
     }
 }
 
