@@ -182,18 +182,20 @@ void ShoppingManager::on_InputButton_clicked()
     allprice = ui->SAllPriceLineEdit->text().toInt() * quan;        /*총가격은 상품의 가격과 수량의 곱으로 총가격을 표시*/
     /*위의 데이터들은 텍스트 파일로 저장*/
 
-    if(client.length() && product.length()) {               /*고객의 성함과 상품의 이름이 있는경우에만 정보 추가*/
+    if(client.length() && product.length() && date.length() && quan) {               /*고객의 성함과 상품의 이름이 있는경우에만 정보 추가*/
         Shopping* s = new Shopping(id, client, product, date, quan, allprice);
         shoppingList.insert(id, s);
         ui->ShoppingTreeWidget->addTopLevelItem(s);
+
+        /*구매 정보 데이터베이스가 연결되지 않았을 경우*/
+        if (!shoppingDataConnection( )) return;
+
+        QSqlQueryModel queryModel;
+        queryModel.setQuery(QString("CALL INSERT_ORDERS(%1, '%2', '%3', %4)").arg(id).arg(client).arg(product).arg(quan));
+        /*구매 정보데이터 베이스로 들어갈 데이터*/
     }
 
-    /*구매 정보 데이터베이스가 연결되지 않았을 경우*/
-    if (!shoppingDataConnection( )) return;
 
-    QSqlQueryModel queryModel;
-    queryModel.setQuery(QString("CALL INSERT_ORDERS(%1, '%2', '%3', %4)").arg(id).arg(client).arg(product).arg(quan));
-    /*구매 정보데이터 베이스로 들어갈 데이터*/
 }
 
 
@@ -222,18 +224,21 @@ void ShoppingManager::on_ModifyButton_clicked()     /*구매 정보를 수정했
         quan = ui->SQuanLineEdit->text().toInt();
         price = ui->SAllPriceLineEdit->text().toInt() * quan;
 
-        /*해당 데이터들이 가지고 있는 리스트의 1행을 모두 수정*/
-        s->setClientName(client);
-        s->setProductName(product);
-        s->setDate(date);
-        s->setquan(quan);
-        s->setAllPrice(price);
-        shoppingList[key] = s;
+        if(client.length() && product.length() && date.length() && quan)    /*client, product, shopping 모두 에디터에 데이터가 존재시 데이터베이스까지 업데이트*/
+        {
+            /*해당 데이터들이 가지고 있는 리스트의 1행을 모두 수정*/
+            s->setClientName(client);
+            s->setProductName(product);
+            s->setDate(date);
+            s->setquan(quan);
+            s->setAllPrice(price);
+            shoppingList[key] = s;
 
-        if (!shoppingDataConnection( )) return;           /*구매 정보 데이터베이스에 접근하지 못한 경우*/
-        QSqlQueryModel queryModel;
-        queryModel.setQuery(QString("CALL UPDATE_ORDERS(%1, '%2', '%3', %4)")
-                            .arg(key).arg(client).arg(product).arg(quan));     /*데이터 베이스에서 수정할 고객 정보*/
+            if (!shoppingDataConnection( )) return;           /*구매 정보 데이터베이스에 접근하지 못한 경우*/
+            QSqlQueryModel queryModel;
+            queryModel.setQuery(QString("CALL UPDATE_ORDERS(%1, '%2', '%3', %4)")
+                                .arg(key).arg(client).arg(product).arg(quan));     /*데이터 베이스에서 수정할 고객 정보*/
+        }
     }
 }
 

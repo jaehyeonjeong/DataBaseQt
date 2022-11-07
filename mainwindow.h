@@ -14,7 +14,8 @@ class QTcpSocket;       //7
 class tcplog;           //8  /*mainwindow.cpp에 들어갈 클래스 8개 추가*/
 
 class QMdiSubWindow;            /*mainwinodw.cpp 파일에 듫어갈 서브 윈도우*/
-class QSqlQueryModel;
+class QSqlQueryModel;       /*sql query문과 접근하기 위한 모델 클래스*/
+class QTableView;           /*데이터 정보를 보여주는 테이블 클래스*/
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }      //ui지원
@@ -53,6 +54,8 @@ private:
     QMdiSubWindow* subWindow;   //MDI에서 구매정보를 불러오는 서브 윈도우 클래스 변수
     QMdiSubWindow* TcpSubWindow[2]; //MDI에서 2개 더 추가할 서브윈도우 클래스 변수
 
-    QSqlQueryModel* queryModel;
+    QSqlQueryModel* queryModel; /*쿼리문 모델 변수*/
+    QTableView *tableview;      /*테이블을 보여주는 클래스*/
+    int flag = 1000;
 };
 #endif // MAINWINDOW_H

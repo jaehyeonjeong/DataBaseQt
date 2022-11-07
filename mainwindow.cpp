@@ -117,7 +117,13 @@ MainWindow::MainWindow(QWidget *parent)
     connect(chettingapp, SIGNAL(TCPSignal(int, QString)),
             tcpserver, SLOT(receiveManager(int, QString)));
 
-
+    /*메인 윈도우에 있는 메뉴바에 테이블을 불러오면 메인윈도우 창닫기 버튼 비활성화*/
+    tableview = new QTableView;
+    if(tableview->isActiveWindow() != false)
+    {
+        /*여기서 어떻게 하면 테이블을 불러올 때마다 창닫기를 비활성화 시킬 수 있을까?*/
+        this->setWindowFlags(Qt::WindowTitleHint | Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
+    }
 }
 
 MainWindow::~MainWindow()
@@ -170,10 +176,22 @@ int MainWindow::on_actionclientDB_triggered()
     queryModel->setHeaderData(2, Qt::Horizontal, QObject::tr("c_phone"));
     queryModel->setHeaderData(3, Qt::Horizontal, QObject::tr("c_email"));
 
-    QTableView *tableview = new QTableView;
+
     tableview->setModel(queryModel);
-    tableview->setWindowTitle(QObject::tr("Query Model"));
+    tableview->setWindowTitle(QObject::tr("Client DataBase"));
     tableview->show( );
+
+
+    if(tableview->isActiveWindow() == true)
+    {
+        flag = 1;
+        qDebug() << flag;
+    }
+    else
+    {
+        flag = 1000;
+        qDebug() << flag;
+    }
 }
 
 
@@ -188,10 +206,17 @@ int MainWindow::on_actionproductDB_triggered()
     queryModel->setHeaderData(2, Qt::Horizontal, QObject::tr("g_com"));
     queryModel->setHeaderData(3, Qt::Horizontal, QObject::tr("g_price"));
 
-    QTableView *tableview = new QTableView;
+    //tableview = new QTableView;
     tableview->setModel(queryModel);
-    tableview->setWindowTitle(QObject::tr("Query Model"));
+    tableview->setWindowTitle(QObject::tr("Product DataBase"));
     tableview->show( );
+    flag = 2;
+    qDebug() << flag;
+    if(!isActiveWindow())
+    {
+        flag = 1000;
+        qDebug() << flag;
+    }
 }
 
 
@@ -209,9 +234,16 @@ int MainWindow::on_actionshoppingDB_triggered()
     queryModel->setHeaderData(5, Qt::Horizontal, QObject::tr("o_allprice"));
 
 
-    QTableView *tableview = new QTableView;
+    //tableview = new QTableView;
     tableview->setModel(queryModel);
-    tableview->setWindowTitle(QObject::tr("Query Model"));
+    tableview->setWindowTitle(QObject::tr("Shopping DataBase"));
     tableview->show( );
+    flag = 3;
+    qDebug() << flag;
+    if(!isActiveWindow())
+    {
+        flag = 1000;
+        qDebug() << flag;
+    }
 }
 

@@ -62,9 +62,9 @@ void ClientManager::loadData()                  /*고객의 정보를 택스트�
     }
     file.close( );
 
-//    QModelIndex i = ui->ClientTreeWidget->currentIndex();
-//    ui->ClientTreeWidget->setRowHidden(0, i, true);
-//    ui->ClientTreeWidget->setRowHidden(1, i, true);
+    //    QModelIndex i = ui->ClientTreeWidget->currentIndex();
+    //    ui->ClientTreeWidget->setRowHidden(0, i, true);
+    //    ui->ClientTreeWidget->setRowHidden(1, i, true);
 }
 
 ClientManager::~ClientManager()
@@ -146,19 +146,22 @@ void ClientManager::on_InputButton_clicked()        /*input버튼 클릭 시 발
     name = ui->CNameLineEdit->text();
     number = ui->CPhoneLineEdit->text();
     address = ui->CEmailLineEdit->text();
-    if(name.length()) {
+    if(name.length() && number.length() && address.length()) {
         Client* c = new Client(id, name, number, address);
         clientList.insert(id, c);
         ui->ClientTreeWidget->addTopLevelItem(c);
         emit TCPClientAdded(id, name);
         emit ClientAdded(name);
+
+        /*고객 데이터베이스가 연결되지 않았을 경우*/
+        if (!clientDataConnection( )) return;
+
+        QSqlQueryModel queryModel;
+        queryModel.setQuery(QString("CALL INSERT_CUST(%1, '%2', '%3', '%4')").arg(id).arg(name).arg(number).arg(address));
+        /*고객 정보로 들어갈 데이터*/
     }
 
-    /*고객 데이터베이스가 연결되지 않았을 경우*/
-    if (!clientDataConnection( )) return;
 
-    QSqlQueryModel queryModel;
-    queryModel.setQuery(QString("CALL INSERT_CUST(%1, '%2', '%3', '%4')").arg(id).arg(name).arg(number).arg(address));     /*고객 정보로 들어갈 데이터*/
 }
 
 
@@ -178,19 +181,22 @@ void ClientManager::on_ModifyButton_clicked()           /*고객 관리 데이�
         int key = item->text(0).toInt();                /*id가 고객정보의 키가 되어버림 */
         Client* c = clientList[key];                    /*고객 관리 데이터의 key값 할당*/
         QString name, number, address;
+
         name = ui->CNameLineEdit->text();               /*QString 타입으로 지정된 변수의 라인에디터 변수 재선언*/
         number = ui->CPhoneLineEdit->text();
         address = ui->CEmailLineEdit->text();
-        c->setName(name);                               /*이름, 전화번호, 이메일 수정*/
-        c->setPhoneNumber(number);
-        c->setAddress(address);
-        clientList[key] = c;
-        emit TCPClientModify(key, name, index);         /*고객의 데이터를 수정할 시 서버의 클라이언트 리스트 에도 수정*/
+        if(name.length() && number.length() && address.length()) {
+            c->setName(name);                               /*이름, 전화번호, 이메일 수정*/
+            c->setPhoneNumber(number);
+            c->setAddress(address);
+            clientList[key] = c;
+            emit TCPClientModify(key, name, index);         /*고객의 데이터를 수정할 시 서버의 클라이언트 리스트 에도 수정*/
 
-        if (!clientDataConnection( )) return;           /*고객 데이터베이스에 접근하지 못한 경우*/
-        QSqlQueryModel queryModel;
-        queryModel.setQuery(QString("CALL UPDATE_CUST(%1, '%2', '%3', '%4')")
-                            .arg(key).arg(name).arg(number).arg(address));     /*데이터 베이스에서 수정할 고객 정보*/
+            if (!clientDataConnection( )) return;           /*고객 데이터베이스에 접근하지 못한 경우*/
+            QSqlQueryModel queryModel;
+            queryModel.setQuery(QString("CALL UPDATE_CUST(%1, '%2', '%3', '%4')")
+                                .arg(key).arg(name).arg(number).arg(address));     /*데이터 베이스에서 수정할 고객 정보*/
+        }
     }
 }
 

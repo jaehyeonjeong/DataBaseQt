@@ -154,18 +154,20 @@ void ProductManager::on_InputButton_clicked()
     name = ui->PNameLineEdit->text();
     company = ui->PCompanyLineEdit->text();
     price = ui->PPriceLineEdit->text().toInt();
-    if(name.length()) {
+    if(name.length() && company.length() && price) {
         Product* p = new Product(id, name, company, price);
         productList.insert(id, p);
         ui->ProductTreeWidget->addTopLevelItem(p);
         emit ProductAdded(name);
+        /*상품 데이터베이스가 연결되지 않았을 경우*/
+        if (!productDataConnection( )) return;
+
+        QSqlQueryModel queryModel;
+        queryModel.setQuery(QString("CALL INSERT_GOOD(%1, '%2', '%3', %4)").arg(id).arg(name).arg(company).arg(price));
+        /*상품 정보로 들어갈 데이터*/
     }
 
-    /*상품 데이터베이스가 연결되지 않았을 경우*/
-    if (!productDataConnection( )) return;
 
-    QSqlQueryModel queryModel;
-    queryModel.setQuery(QString("CALL INSERT_GOOD(%1, '%2', '%3', %4)").arg(id).arg(name).arg(company).arg(price));     /*상품 정보로 들어갈 데이터*/
 }
 
 /*상품의 정보를 입력하다가 에디터에 있는데이터를 모두 지우는 경우*/
@@ -189,15 +191,18 @@ void ProductManager::on_ModifyButton_clicked()
         name = ui->PNameLineEdit->text();
         company = ui->PCompanyLineEdit->text();
         price = ui->PPriceLineEdit->text().toInt();
-        p->setName(name);
-        p->setCompany(company);
-        p->setPrice(price);
-        productList[key] = p;
+        if(name.length() && company.length() && price)
+        {
+            p->setName(name);
+            p->setCompany(company);
+            p->setPrice(price);
+            productList[key] = p;
 
-        if (!productDataConnection( )) return;           /*고객 데이터베이스에 접근하지 못한 경우*/
-        QSqlQueryModel queryModel;
-        queryModel.setQuery(QString("CALL UPDATE_GOOD(%1, '%2', '%3', %4)")
-                            .arg(key).arg(name).arg(company).arg(price));     /*데이터 베이스에서 수정할 고객 정보*/
+            if (!productDataConnection( )) return;           /*고객 데이터베이스에 접근하지 못한 경우*/
+            QSqlQueryModel queryModel;
+            queryModel.setQuery(QString("CALL UPDATE_GOOD(%1, '%2', '%3', %4)")
+                                .arg(key).arg(name).arg(company).arg(price));     /*데이터 베이스에서 수정할 고객 정보*/
+        }
     }
 }
 
