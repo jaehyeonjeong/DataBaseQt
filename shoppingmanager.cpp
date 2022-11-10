@@ -14,9 +14,12 @@
 /*Oracle SQL 연동을 위한 헤더*/
 #include <QTableView>
 #include <QSqlQueryModel>
+#include <QSqlTableModel>
+#include <QSqlRelationalTableModel>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
+#include <QSqlRecord>
 
 
 
@@ -32,78 +35,50 @@ ShoppingManager::ShoppingManager(QWidget *parent) :
 
     menu = new QMenu;
     menu->addAction(removeAction);          /*메뉴 할당*/
-    ui->ShoppingTreeWidget->setContextMenuPolicy(Qt::CustomContextMenu);    /*구매정보 리스트에만 나오는 컨텍스트 메뉴 선언*/
-    connect(ui->ShoppingTreeWidget, SIGNAL(customContextMenuRequested(QPoint)),
+    ui->tableView->setContextMenuPolicy(Qt::CustomContextMenu);    /*구매정보 리스트에만 나오는 컨텍스트 메뉴 선언*/
+    connect(ui->tableView, SIGNAL(customContextMenuRequested(QPoint)),
             this, SLOT(showContextMenu(QPoint)));                   /*컨텍스트를 띄울수 있는 커넥트 함수*/
 
-    /*파일 불러오기*/
-    QFile file("shoppinglist.txt");
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-        return;
-
-    QTextStream in(&file);
-    while (!in.atEnd()) {           /*텍스트의 흐름을 읽어내는데 끝까지 읽어냄*/
-        QString line = in.readLine();
-        QList<QString> row = line.split(", "); // , 특수 문자가 보일때마다 분류
-        if(row.size()) {
-            int id = row[0].toInt();
-            int quan = row[4].toInt();
-            int price = row[5].toInt();
-            Shopping* c = new Shopping(id, row[1], row[2], row[3], quan, price);
-            ui->ShoppingTreeWidget->addTopLevelItem(c); /*텍스트에 저장된 데이터들을 리스트에 1행씩 주입*/
-            shoppingList.insert(id, c);
-        }
-    }
-    file.close( );
-    /*파일 불러오기 끝*/
     QDate* date = new QDate;
     ui->SDateLineEdit->setDate(date->currentDate());
 
+    QSqlDatabase ShoppingDB = QSqlDatabase::addDatabase("QODBC", "shoppingConnection");
+    /*추가하려는 데이터베이스 종류는 QODBC(Qt Oracle Database)*/
+    ShoppingDB.setDatabaseName("Oracle11g");    /*연결 데이터베이스 이름*/
+    ShoppingDB.setUserName("ProjectDB");        /*데이터 베이스 계정명*/
+    ShoppingDB.setPassword("1234");             /*데이터 베이스 비밀번호*/
 
-    //ui->SDateLineEdit->setPlaceholderText("press yyyy-mm-dd or Enter");     /*날짜 입력 형식을 표시*/
-//    QModelIndex i = ui->ShoppingTreeWidget->currentIndex();
-//    ui->ShoppingTreeWidget->setRowHidden(0, i, true);
-//    ui->ShoppingTreeWidget->setRowHidden(1, i, true);
+    if(ShoppingDB.open()){
+        ShoppingQuery = new QSqlQuery(ShoppingDB);      /*작동할 쿼리문을 해당 데이터베이스에 할당*/
+        ShoppingModel = new QSqlTableModel(this, ShoppingDB);   /*테이블 모델을 사용*/
+        ShoppingModel->setTable("ORDERS");              /*테이블 중 ORDERS 테이블 사용*/
+        ShoppingModel->select();                        /*테이블 호출*/
+
+        ShoppingModel->setHeaderData(0, Qt::Horizontal, QObject::tr("o_id"));
+        ShoppingModel->setHeaderData(1, Qt::Horizontal, QObject::tr("c_name"));
+        ShoppingModel->setHeaderData(2, Qt::Horizontal, QObject::tr("g_name"));
+        ShoppingModel->setHeaderData(3, Qt::Horizontal, QObject::tr("o_date"));
+        ShoppingModel->setHeaderData(4, Qt::Horizontal, QObject::tr("o_quan"));
+        ShoppingModel->setHeaderData(5, Qt::Horizontal, QObject::tr("o_allprice"));
+
+        ui->tableView->setModel(ShoppingModel);
+    }
 }
 
 ShoppingManager::~ShoppingManager()
 {
     delete ui;
 
-    /*파일 저장*/
-    QFile file("shoppinglist.txt");
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
-        return;
-
-    /*나중에 콤보박스로 데이터를 넣을 때 이방식을 적용해보자*/
-    QTextStream out(&file);
-    //out << "shoppingID, clientName, productName, Date, quan, AllPrice\n";
-    for (const auto& v : shoppingList) {
-        Shopping* s = v;
-        out << s->getId() << ", " << s->getClientName() << ", ";
-        out << s->getProductName() << ", ";
-        out << s->getDate() << ", ";
-        out << s->getquan() << ", ";
-        out << s->getAllPrice() << "\n";        /*데이터들을 ,로 구분짓고 1행의 데이터 주입이 마치면 \n*/
+    QSqlDatabase ShoppingDB = QSqlDatabase::database("shoppingConnection");/*구매 정보 데이터 베이스 변수 선언*/
+    if(ShoppingDB.isOpen())
+    {
+        ShoppingModel->submitAll();
+        /*보류 중인 모든 변경 사항을 제출하고 성공하면 true를 반환합니다.
+         * 오류 시 false를 반환하고 lastError()를 사용하여 자세한 오류 정보를 얻을 수 있습니다.*/
+        ShoppingDB.close();
+        QSqlDatabase::removeDatabase("shoppingConnection"); /*할당된 데이터베이스를 제거*/
     }
-    file.close( );
 }
-
-bool ShoppingManager::shoppingDataConnection( )
-{
-    QSqlDatabase db = QSqlDatabase::addDatabase("QODBC");   /*추가하려는 데이터베이스 종류는 QODBC(Qt Oracle DataBase)*/
-    db.setDatabaseName("Oracle11g");            /*데이터베이스 이름*/
-    db.setUserName("projectDB");                /*데이터 베이스 계정 명*/
-    db.setPassword("1234");                     /*데이터 베이스 비밀번호*/
-    if (!db.open()) {
-        qDebug() << db.lastError().text();
-    } else {
-        qDebug("success");
-    }
-
-    return true;
-}
-
 
 void ShoppingManager::CreceiveData( QString str)
 {
@@ -120,82 +95,56 @@ void ShoppingManager::PreceivePrice(QString price)
     ui->SAllPriceLineEdit->setText(price);      /*상품의 가격을 받는 슬롯*/
 }
 
-int ShoppingManager::makeId( )          /*아이디 자동 할당*/
+int ShoppingManager::makeId( )          /*구매 정보 아이디 자동 할당*/
 {
-    if(shoppingList.size( ) == 0) {
-        return 1;
-    } else {
-        auto id = shoppingList.lastKey();
-        return ++id;
+    if(ShoppingModel->rowCount() == 0){ //구매정보데이터베이스에 데이터가 없으면
+        return 1;               //1을 반환
+    }else{
+        int id = ui->SIDLineEdit->text().toInt();
+        return ++id;            /*선택한 에디트 아이디로 자동 +1 연산*/
     }
 }
 
 
 void ShoppingManager::showContextMenu(const QPoint& pos)        /*컨택스트 메뉴 슬롯*/
 {
-    QPoint globalPos = ui->ShoppingTreeWidget->mapToGlobal(pos);    /*매개인자 우클릭 시 위치대로 메뉴를 생성하게 하는 방향 선언*/
-    menu->exec(globalPos);          /*메뉴 실행*/
+    QPoint globalPos = ui->tableView->mapToGlobal(pos);    /*매개인자 우클릭 시 위치대로 메뉴를 생성하게 하는 방향 선언*/
+    if(ui->tableView->indexAt(pos).isValid())
+        menu->exec(globalPos);          /*메뉴 실행*/
 }
 
 void ShoppingManager::removeItem()              /*우클릭 시 삭제할 정보를 리스트에서 지워주는 함수*/
 {
-    QTreeWidgetItem* item = ui->ShoppingTreeWidget->currentItem();      /*할당된 아이템 선언*/
-    if(item !=  nullptr)
-    {
-        shoppingList.remove(item->text(0).toInt());             /*해당하는 ID를 제거(ID에 속한 데이터들은 지워짐)*/
-        ui->ShoppingTreeWidget->takeTopLevelItem
-                (ui->ShoppingTreeWidget->indexOfTopLevelItem(item)); /*구매 정보 리스트에서 제거됨*/
-        ui->ShoppingTreeWidget->update();                   /*이후 구매정보 최신화*/
+    int index = ui->SIDLineEdit->text().toInt();     /*할당된 아이템 선언*/
+    if(index){                      //인덱스 값이 존재하는 경우
+        ShoppingQuery->exec(QString("CALL DELETE_ORDERS(%1)").arg(index));
+        /*해당하는 인덱스 데이터를 지우는 프로시져*/
+        ShoppingModel->select();        /*해당 테이블 select 호출*/
+        ui->tableView->update();        /*해당 테이블 업데이트*/
     }
-
-    if (!shoppingDataConnection( )) return;           /*구매 정보 데이터베이스에 접근하지 못한 경우*/
-    QSqlQueryModel queryModel;
-    queryModel.setQuery(QString("CALL DELETE_ORDERS(%1)").arg(item->text(0).toInt()));     /*데이터 베이스에서 삭제할 구매 정보*/
 }
 
-/*수정하고자 하는 구매정보 리스트를 클릭하여 하단과 같이 해당 정보를 입력*/
-void ShoppingManager::on_ShoppingTreeWidget_itemClicked(QTreeWidgetItem *item, int column)
+void ShoppingManager::on_InputButton_clicked()      /*구매 정보 데이터 베이스에 데이터 추가*/
 {
-    Q_UNUSED(column);
-    ui->SIDLineEdit->setText(item->text(0));
-    ui->ClientLineEdit->clear();                /*고객의 성함 에디터의 데이터를 지우기*/
-    ui->ClientLineEdit->setPlaceholderText("choose Client Name");  /*수정을 원하는 고객의 성함을 선택하라고 알림*/
-    ui->ProductLineEdit->clear();               /*상품의 이름 에디터의 데이터를 지우기*/
-    ui->ProductLineEdit->setPlaceholderText("choose Product Name"); /*수정을 원하는 상품의 이름을 선택하라 알림*/
-    ui->SDateLineEdit->setDate(QDate::fromString(item->text(3), "yyyy-MM-dd"));          /*구매정보의 날짜를 알려주는 에디터 라인*/
-    ui->SQuanLineEdit->setText(item->text(4));          /*상품의 수량을 알려주는 에디터 라인*/
-    //ui->SAllPriceLineEdit->setText(item->text(5));
-    ui->SAllPriceLineEdit->setText("");                 /*상품의 가격은 상품의 이름을 선택할 시 자동으로 채워지니 빈텍스트를 출력*/
-    ui->toolBox->setCurrentIndex(0);                /*아이템 클릭시 toolbox를 inputbox로 조정*/
-}
-
-
-void ShoppingManager::on_InputButton_clicked()
-{
-    QString client, product, date;
+    QString client, product, date;          /*구매 정보의 데이터 6개 변수 할당*/
     int id = makeId( );
-    int quan, allprice = 0;
-    client = ui->ClientLineEdit->text();
-    product = ui->ProductLineEdit->text();
-    date = ui->SDateLineEdit->date().toString("yyyy-MM-dd");
-    quan = ui->SQuanLineEdit->text().toInt();
+    int quan = 0, allprice = 0;
+
+    ui->SIDLineEdit->setText(QString::number(id));  /*아이디 라인 에디트*/
+    client = ui->ClientLineEdit->text();            /*고객 성함 라인에디트*/
+    product = ui->ProductLineEdit->text();          /*상품 이름 라인에디트*/
+    date = ui->SDateLineEdit->date().toString("yyyy-MM-dd");    /*날짜 정보 라인에디트*/
+    quan = ui->SQuanLineEdit->text().toInt();                   /*구매 정보 수량 라인 에디트*/
     allprice = ui->SAllPriceLineEdit->text().toInt() * quan;        /*총가격은 상품의 가격과 수량의 곱으로 총가격을 표시*/
     /*위의 데이터들은 텍스트 파일로 저장*/
 
-    if(client.length() && product.length() && date.length() && quan) {               /*고객의 성함과 상품의 이름이 있는경우에만 정보 추가*/
-        Shopping* s = new Shopping(id, client, product, date, quan, allprice);
-        shoppingList.insert(id, s);
-        ui->ShoppingTreeWidget->addTopLevelItem(s);
-
-        /*구매 정보 데이터베이스가 연결되지 않았을 경우*/
-        if (!shoppingDataConnection( )) return;
-
-        QSqlQueryModel queryModel;
-        queryModel.setQuery(QString("CALL INSERT_ORDERS(%1, '%2', '%3', %4)").arg(id).arg(client).arg(product).arg(quan));
-        /*구매 정보데이터 베이스로 들어갈 데이터*/
+    if(client.length() && product.length() && date.length() && quan) { /*고객의 성함과 상품의 이름이 있는경우에만 정보 추가*/
+        /*오라클 내의 프로시져를 사용*/
+        ShoppingQuery->exec(QString("CALL INSERT_ORDERS(%1, '%2', '%3', %4)")
+                            .arg(id).arg(client).arg(product).arg(quan));
+        ShoppingModel->select();                    /*릴레이션 테이블 호출*/
+        ui->tableView->setModel(ShoppingModel);     /*테이블 뷰에 띄우기*/
     }
-
-
 }
 
 
@@ -212,32 +161,20 @@ void ShoppingManager::on_CancelButton_clicked()     /*구매 정보를 입력하
 
 void ShoppingManager::on_ModifyButton_clicked()     /*구매 정보를 수정했을 경우 재입력 되는 버튼 함수*/
 {
-    QTreeWidgetItem* item = ui->ShoppingTreeWidget->currentItem();
-    if(item != nullptr) {
-        int key = item->text(0).toInt();
-        Shopping* s = shoppingList[key];
-        QString client, product, date;
-        int quan, price;
-        client = ui->ClientLineEdit->text();
-        product = ui->ProductLineEdit->text();
-        date = ui->SDateLineEdit->date().toString("yyyy-MM-dd");        /*날짜 업데이트*/
-        quan = ui->SQuanLineEdit->text().toInt();
-        price = ui->SAllPriceLineEdit->text().toInt() * quan;
+    QModelIndex tIndex = ui->tableView->currentIndex(); /*구매 정보 테이블 뷰 인덱스 할당*/
+    if(tIndex.isValid()) {                      /*데이터 베이스 인덱스에 데이터가 존재 한다면*/
+        int ID = ui->SIDLineEdit->text().toInt();       /*정수형 데이터(id)*/
+        QString clientname = ui->ClientLineEdit->text();      /*QString 데이터*/
+        QString productname = ui->ProductLineEdit->text();
+        int quan = ui->SQuanLineEdit->text().toInt();
 
-        if(client.length() && product.length() && date.length() && quan)    /*client, product, shopping 모두 에디터에 데이터가 존재시 데이터베이스까지 업데이트*/
+        if(clientname.length() && productname.length() && quan) /*수정할 정보를 모두 입력 했다면*/
         {
-            /*해당 데이터들이 가지고 있는 리스트의 1행을 모두 수정*/
-            s->setClientName(client);
-            s->setProductName(product);
-            s->setDate(date);
-            s->setquan(quan);
-            s->setAllPrice(price);
-            shoppingList[key] = s;
-
-            if (!shoppingDataConnection( )) return;           /*구매 정보 데이터베이스에 접근하지 못한 경우*/
-            QSqlQueryModel queryModel;
-            queryModel.setQuery(QString("CALL UPDATE_ORDERS(%1, '%2', '%3', %4)")
-                                .arg(key).arg(client).arg(product).arg(quan));     /*데이터 베이스에서 수정할 고객 정보*/
+            ShoppingQuery->exec(QString("CALL UPDATE_ORDERS(%1, '%2', '%3', %4)")
+                                .arg(ID).arg(clientname).arg(productname).arg(quan));
+            /*구매 정보 업데이트 프로시져 호출*/
+            ShoppingModel->select();    /*테이블 호출*/
+            ui->tableView->update();    /*테이블 업데이트*/
         }
     }
 }
@@ -245,34 +182,69 @@ void ShoppingManager::on_ModifyButton_clicked()     /*구매 정보를 수정했
 
 void ShoppingManager::on_SearchButton_clicked()         /*검색 버튼을 눌렀을 시 탐색하여 해당 데이터의 정보를 호출*/
 {
-    ui->SearchTreeWidget->clear();
-    int i = ui->comboBox->currentIndex();
-    auto flag = (i)? Qt::MatchCaseSensitive|Qt::MatchContains
-                   : Qt::MatchCaseSensitive;
-    {
-        auto items = ui->ShoppingTreeWidget->findItems
-                (ui->SearchLineEdit->text(), flag, i);
+    ui->SearchTreeWidget->clear();                      /*검색 리스트를 클리어*/
+    int combo = ui->comboBox->currentIndex();           /*검색 콤보박스 인덱스 할당*/
+    auto flag = (combo)? Qt::MatchCaseSensitive|Qt::MatchContains   /*매칭의 조건 옵션 설정*/
+                       : Qt::MatchCaseSensitive;
+    QModelIndexList indexes = ShoppingModel->match(ShoppingModel->index(0, combo),
+                                                   Qt::EditRole,
+                                                   ui->SearchLineEdit->text(),
+                                                   -1,
+                                                   Qt::MatchFlags(flag));
 
-        foreach(auto i, items) {
-            Shopping* s = static_cast<Shopping*>(i);
-            int id = s->getId();
-            QString client = s->getClientName();
-            QString product = s->getProductName();
-            QString date = s->getDate();
-            int quan = s->getquan();
-            int price = s->getAllPrice();
-            Shopping* item = new Shopping(id, client, product, date,
-                                        quan, price);
-            ui->SearchTreeWidget->addTopLevelItem(item);
-        }
+    foreach(auto ix, indexes){      /*검색된 정보들을 처음부터 끝까지 나열*/
+        int id = ShoppingModel->data(ix.siblingAtColumn(0)).toInt();                    //아이디 변수 선언
+        QString clientname = ShoppingModel->data(ix.siblingAtColumn(1)).toString();     //고객 성함 변수 선언
+        QString productname = ShoppingModel->data(ix.siblingAtColumn(2)).toString();    //상품 이름 변수 선언
+        QString date = ShoppingModel->data(ix.siblingAtColumn(3)).toString();           //구매 정보 날짜 변수 선언
+        int quan = ShoppingModel->data(ix.siblingAtColumn(4)).toInt();                  //구매 정보 수량 변수 선언
+        int price = ShoppingModel->data(ix.siblingAtColumn(5)).toInt();                 //총 구매 가격 변수 선언
+        Shopping* item = new Shopping(id, clientname, productname, date, quan, price);
+        ui->SearchTreeWidget->addTopLevelItem(item);
     }
 }
 
 
 void ShoppingManager::on_SDateLineEdit_returnPressed()          /*엔터키를 입력시 자동으로 금일 날짜를 호출하는 함수*/
 {
-    QDateTimeEdit* datetimeedit = new QDateTimeEdit(QDate::currentDate(), 0);   /*현재 날짜를 yyyy-mm-dd형태의 라인에디트로 선언*/
+    //QDateTimeEdit* datetimeedit = new QDateTimeEdit(QDate::currentDate(), 0);   /*현재 날짜를 yyyy-mm-dd형태의 라인에디트로 선언*/
     //datetimeedit->setCalendarPopup(true);
     //ui->SDateLineEdit->setText(datetimeedit->text());       /*텍스트 형태의 데이터를 날짜 입력 라인에디터에 호출*/
+}
+
+
+void ShoppingManager::on_tableView_clicked(const QModelIndex &index) //테이블 뷰 클릭 함수
+{
+    QString ID = index.sibling(index.row(), 0).data().toString();   //테이블 id변수 선언
+    QString clientname = index.sibling(index.row(), 1).data().toString();   /*고객 성함 변수*/
+    QString proccudtname = index.sibling(index.row(), 2).data().toString(); /*상품 이름 변수 선언*/
+    QString date = index.sibling(index.row(), 3).data().toString();     /*구매 날짜 변수 선언*/
+    QString quan = index.sibling(index.row(), 4).data().toString();     /*구매 수량 변수 선언*/
+    QString price = index.sibling(index.row(), 5).data().toString();    /*구매 가격 변수 선언*/
+
+    /*현존하는 ui에디트에 데이터들을 입력*/
+    ui->SIDLineEdit->setText(ID);
+    ui->ClientLineEdit->clear();                /*고객의 성함 에디터의 데이터를 지우기*/
+    ui->ClientLineEdit->setPlaceholderText("choose Client Name");  /*수정을 원하는 고객의 성함을 선택하라고 알림*/
+    ui->ProductLineEdit->clear();               /*상품의 이름 에디터의 데이터를 지우기*/
+    ui->ProductLineEdit->setPlaceholderText("choose Product Name"); /*수정을 원하는 상품의 이름을 선택하라 알림*/
+    ui->SDateLineEdit->setDate(QDate::fromString(date, "yyyy-MM-dd"));          /*구매정보의 날짜를 알려주는 에디터 라인*/
+    ui->SQuanLineEdit->setText(quan);          /*상품의 수량을 알려주는 에디터 라인*/
+    //ui->SAllPriceLineEdit->setText(item->text(5));
+    ui->SAllPriceLineEdit->setText("");                 /*상품의 가격은 상품의 이름을 선택할 시 자동으로 채워지니 빈텍스트를 출력*/
+    ui->toolBox->setCurrentIndex(0);                /*아이템 클릭시 toolbox를 inputbox로 조정*/
+}
+
+
+void ShoppingManager::on_RecentButton_clicked()
+{
+    ShoppingQuery->prepare("SELECT MAX(O_ID) FROM ORDERS;");/*현존하는 아이디중 최댓값을 출력하는 쿼리문*/
+    ShoppingQuery->exec();            /*쿼리문 실행*/
+    while (ShoppingQuery->next()) {   /*쿼리문 진행*/
+        qDebug() << ShoppingQuery->value(0).toInt();  /*쿼리값 디버깅*/
+        ui->RecentLineEdit->setText(QString::number(ShoppingQuery->value(0).toInt()));    /*아이디 라인 에디트체 자동 할당 실행*/
+        ui->SIDLineEdit->setText(QString::number(ShoppingQuery->value(0).toInt()));       /*표시 라인 에디트에 자동 할당*/
+        //ClientModel->select();
+    }
 }
 

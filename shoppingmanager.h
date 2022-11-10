@@ -5,6 +5,8 @@
 
 class Shopping;
 class QTreeWidgetItem;
+class QSqlTableModel;
+class QSqlQuery;
 
 namespace Ui {
 class ShoppingManager;
@@ -20,24 +22,18 @@ public:
 
 
 public slots:
-    void on_ShoppingTreeWidget_itemClicked(QTreeWidgetItem *item, int column);
     void showContextMenu(const QPoint&);
     void removeItem();
     void CreceiveData(QString str);
     void PreceiveData(QString str);
     void PreceivePrice(QString price);
     void on_InputButton_clicked();
-
-
-
-private slots:
     void on_CancelButton_clicked();
-
     void on_ModifyButton_clicked();
-
     void on_SearchButton_clicked();
-
     void on_SDateLineEdit_returnPressed();
+    void on_tableView_clicked(const QModelIndex &index);
+    void on_RecentButton_clicked();
 
 private:
     Ui::ShoppingManager *ui;
@@ -45,9 +41,8 @@ private:
     QMenu* menu;
     int makeId();
 
-
-    /*구매 정보 용 데이터 베이스 확인 함수*/
-    static bool shoppingDataConnection( );
+    QSqlTableModel* ShoppingModel;
+    QSqlQuery* ShoppingQuery;
 };
 
 #endif // SHOPPINGMANAGER_H

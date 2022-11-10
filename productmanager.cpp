@@ -8,9 +8,13 @@
 /*Oracle SQL 연동을 위한 헤더*/
 #include <QTableView>
 #include <QSqlQueryModel>
+#include <QSqlTableModel>
+#include <QSqlRelationalTableModel>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
+#include <QSqlRecord>
+#include <QSqlDatabase>
 
 
 /*고객 관리 프로파일과 거의 동일한 기능을 수행*/
@@ -26,8 +30,8 @@ ProductManager::ProductManager(QWidget *parent) :
 
     menu = new QMenu;
     menu->addAction(removeAction);
-    ui->ProductTreeWidget->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(ui->ProductTreeWidget, SIGNAL(customContextMenuRequested(QPoint)),
+    ui->tableView->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->tableView, SIGNAL(customContextMenuRequested(QPoint)),
             this, SLOT(showContextItem(QPoint)));           /*컨택스트 메뉴 호출 커넥트*/
 
     /*데이터 보내기*/
@@ -37,137 +41,100 @@ ProductManager::ProductManager(QWidget *parent) :
     connect(ui->PPriceLineEdit, SIGNAL(textChanged(QString)),
             this, SIGNAL(ProductPrices(QString)));              /*상품의 가격 데이터 전송*/
 
+    /*데이터 베이스의 데이터들을 불러오기*/
 
-    /*파일 불러오기*/
-    QFile file("productList.txt");
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-        return;
+    QSqlDatabase ProductDB = QSqlDatabase::addDatabase("QODBC", "productConnection");
+    /*추가하려는 데이터베이스 종류는 QODBC(Qt Oracle DataBase)*/
+    ProductDB.setDatabaseName("Oracle11g");            /*데이터베이스 이름*/
+    ProductDB.setUserName("ProjectDB");                /*데이터 베이스 계정 명*/
+    ProductDB.setPassword("1234");                     /*데이터 베이스 비밀번호*/
 
-    QTextStream in(&file);
-    while (!in.atEnd()) {
-        QString line = in.readLine();
-        QList<QString> row = line.split(", ");
-        if(row.size()) {
-            int id = row[0].toInt();
-            int price = row[3].toInt();
-            Product* c = new Product(id, row[1], row[2], price);
-            ui->ProductTreeWidget->addTopLevelItem(c);      /*살품의 정보(아이디, 이름, 회사, 가격) 주입*/
-            productList.insert(id, c);
+    if (ProductDB.open()) {
+        ProductQuery = new QSqlQuery(ProductDB);        /*상품 데이터베이스 쿼리문*/
+        ProductModel = new QSqlTableModel(this, ProductDB);   /*릴레이션 테이블 동기화*/
+        ProductModel->setTable("GOODS");                /*GOODS 테이블 탐색*/
+        ProductModel->select();
 
-            emit ProductAdded(row[1]);
-        }
+        /*고객 데이터베이스 출력 쿼리문*/
+        ProductModel->setHeaderData(0, Qt::Horizontal, QObject::tr("g_id"));
+        ProductModel->setHeaderData(1, Qt::Horizontal, QObject::tr("g_name"));
+        ProductModel->setHeaderData(2, Qt::Horizontal, QObject::tr("g_com"));
+        ProductModel->setHeaderData(3, Qt::Horizontal, QObject::tr("g_price"));
+
+        ui->tableView->setModel(ProductModel);
     }
-    file.close( );
-//    QModelIndex i = ui->ProductTreeWidget->currentIndex();
-//    ui->ProductTreeWidget->setRowHidden(0, i, true);
-//    ui->ProductTreeWidget->setRowHidden(1, i, true);
+//    for(int i = 0; i < ProductModel->rowCount(); i++){                       /*로우 카운트를 이용하여 데이터를 가지고 오는 함수*/
+//        int id = ProductModel->data(ProductModel->index(i, 0)).toInt();       /*로우와 컬럼 값으로 아이디와 이름 할당*/
+//        QString name = ProductModel->data(ProductModel->index(i, 1)).toString();
+//        //emit TCPClientAdded(id, name);
+//    }
 }
 
 ProductManager::~ProductManager()
 {
     delete ui;
 
-    /*파일 저장*/
-    QFile file("productList.txt");
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
-        return;
-
-    QTextStream out(&file);             /*파일을 읽을 수 있는 데이터의 흐름*/
-    //out << "productID, productName, productCompany, productPrice\n";
-    for (const auto& v : productList) {     /*리스트로 정열된 상품의 정보 나열*/
-        Product* c = v;
-        out << c->getid() << ", " << c->getName() << ", ";
-        out << c->getCompany() << ", ";
-        out << c->getPrice() << "\n";
-    }
-    file.close( );
-}
-
-/*database에 연동이 되는지 확인하는 함수*/
-bool ProductManager::productDataConnection()
-{
-    QSqlDatabase db = QSqlDatabase::addDatabase("QODBC");   /*추가하려는 데이터베이스 종류는 QODBC(Qt Oracle DataBase)*/
-    db.setDatabaseName("Oracle11g");            /*데이터베이스 이름*/
-    db.setUserName("projectDB");                /*데이터 베이스 계정 명*/
-    db.setPassword("1234");                     /*데이터 베이스 비밀번호*/
-    if (!db.open()) {
-        qDebug() << db.lastError().text();
-    } else {
-        qDebug("success");
-    }
-
-    return true;
-}
-
-/*수정하고 싶은 아이템을 클릭하였을 때*/
-void ProductManager::on_ProductTreeWidget_itemClicked(QTreeWidgetItem *item, int column)
-{
-    Q_UNUSED(column);               /*매개인자 column은 쓰이지 않는다*/
-    ui->PIDLineEdit->setText(item->text(0));
-    ui->PNameLineEdit->setText(item->text(1));
-    ui->PCompanyLineEdit->setText(item->text(2));
-    ui->PPriceLineEdit->setText(item->text(3));
-    ui->toolBox->setCurrentIndex(0);        /*아이템클릭시 툴박스의 위치를 input으로 설정*/
-}
-
-int ProductManager::makeID()
-{
-    if(productList.size() == 0)
+    QSqlDatabase ProductDB = QSqlDatabase::database("productConnection");  /*db는 현재 가지고 있는 데이터 베이스*/
+    if(ProductDB.isOpen())                     /*데이터 베이스가 열려있다면*/
     {
-        return 1;
+        ProductModel->submitAll();
+        /*보류 중인 모든 변경 사항을 제출하고 성공하면 true를 반환합니다.
+         * 오류 시 false를 반환하고 lastError()를 사용하여 자세한 오류 정보를 얻을 수 있습니다.*/
+
+        ProductDB.close();
+        QSqlDatabase::removeDatabase("productConnection");     /*할당되어 있는 QODBC를 제거*/
     }
-    else
-    {
-        auto id = productList.lastKey();
-        return ++id;
+}
+
+int ProductManager::makeID()        /*상품의 아이디 자동 할당*/
+{
+    if(ProductModel->rowCount() == 0){  /*상품의 데이터베이스 정보에 어떠한 정보도 들어 있지 않다면*/
+        return 1;               /*ID를 1부터 시작*/
+    }else{
+        int id = ui->PIDLineEdit->text().toInt();    /**/
+        /*상품정보중 최근 정보의 id에 접근*/
+        return ++id;                /*최근 아이디에 + 1 연산*/
     }
 }
 
 /*컨텍스트 메뉴를 마우스 우클릭 시 지정된 위치에서 메뉴호출*/
 void ProductManager::showContextItem(const QPoint& pos)
 {
-    QPoint globalPos = ui->ProductTreeWidget->mapToGlobal(pos);
-    menu->exec(globalPos);
+    QPoint globalPos = ui->tableView->mapToGlobal(pos);
+    if(ui->tableView->indexAt(pos).isValid())
+        menu->exec(globalPos);
 }
 
-void ProductManager::removeItem()
+void ProductManager::removeItem()   /*상품 데이터의 데이터를 삭제하는 함수*/
 {
-    QTreeWidgetItem* item = ui->ProductTreeWidget->currentItem();
-    if(item != nullptr) {
-        productList.remove(item->text(0).toInt());
-        ui->ProductTreeWidget->takeTopLevelItem
-                (ui->ProductTreeWidget->indexOfTopLevelItem(item));
-        ui->ProductTreeWidget->update();
+    int index = ui->PIDLineEdit->text().toInt();/*상품 테이블 데이터 인덱싱*/
+    if(index){    /*해당 인덱스의 값이 존재하면*/
+        ProductQuery->exec(QString("CALL DELETE_GOOD(%1)").arg(index));    /*해당하는 인덱스 데이터를 지우는 프로시져 호출*/
+        ProductModel->select();      /*해당 테이블 호출*/
+        //ui->tableView->setModel(ClientModel);   /*테이블 모델 셋*/
+        ui->tableView->update();
     }
-    if (!productDataConnection( )) return;           /*고객 데이터베이스에 접근하지 못한 경우*/
-    QSqlQueryModel queryModel;
-    queryModel.setQuery(QString("CALL DELETE_GOOD(%1)").arg(item->text(0).toInt()));     /*데이터 베이스에서 삭제할 상품 정보*/
 }
 
 
 /*상품의 정보 입력*/
-void ProductManager::on_InputButton_clicked()
+void ProductManager::on_InputButton_clicked()       /*상품의 정보를 데이터 베이스에 추가*/
 {
-    QString name, company;
+    QString name, company;                  /*상품정보의 데이터 4개 변수 할당*/
     int price;
-    int id = makeID( );
-    name = ui->PNameLineEdit->text();
-    company = ui->PCompanyLineEdit->text();
-    price = ui->PPriceLineEdit->text().toInt();
-    if(name.length() && company.length() && price) {
-        Product* p = new Product(id, name, company, price);
-        productList.insert(id, p);
-        ui->ProductTreeWidget->addTopLevelItem(p);
-        emit ProductAdded(name);
-        /*상품 데이터베이스가 연결되지 않았을 경우*/
-        if (!productDataConnection( )) return;
-
-        QSqlQueryModel queryModel;
-        queryModel.setQuery(QString("CALL INSERT_GOOD(%1, '%2', '%3', %4)").arg(id).arg(name).arg(company).arg(price));
-        /*상품 정보로 들어갈 데이터*/
+    int id = makeID( );                     /*아이디는 자동으로 생성*/
+    ui->PIDLineEdit->setText(QString::number(id));      /*아이디 라인에디트*/
+    name = ui->PNameLineEdit->text();                   /*이름 라인에디트*/
+    company = ui->PCompanyLineEdit->text();             /*회사 라인에디트*/
+    price = ui->PPriceLineEdit->text().toInt();         /*상품 가격 라인 에디트*/
+    if(id && name.length() && company.length() && price) {    /*이름, 회사, 가격 정보를 모두 입력한 경우*/
+        /*오라클 내의 프로시져를 사용*/
+        ProductQuery->exec(QString("CALL INSERT_GOOD(%1, '%2', '%3', %4)")
+                           .arg(id).arg(name).arg(company).arg(price));
+        ProductModel->select();                     /*릴레이션 테이블 호출*/
+        ui->tableView->setModel(ProductModel);      /*테이블 뷰에 띄우기*/
+        //ProductModel->QSqlQueryModel::setQuery("SELECT * FROM GOODS ORDER BY G_ID");
     }
-
-
 }
 
 /*상품의 정보를 입력하다가 에디터에 있는데이터를 모두 지우는 경우*/
@@ -180,28 +147,22 @@ void ProductManager::on_CancelButton_clicked()
 }
 
 /*상품의 정보를 수정하는 경우*/
-void ProductManager::on_ModifyButton_clicked()
+void ProductManager::on_ModifyButton_clicked()          /*상품 데이터베이스 데이터 수정*/
 {
-    QTreeWidgetItem* item = ui->ProductTreeWidget->currentItem();
-    if(item != nullptr) {
-        int key = item->text(0).toInt();
-        Product* p = productList[key];
-        QString name, company;
-        int price;
-        name = ui->PNameLineEdit->text();
-        company = ui->PCompanyLineEdit->text();
-        price = ui->PPriceLineEdit->text().toInt();
-        if(name.length() && company.length() && price)
+    QModelIndex tIndex = ui->tableView->currentIndex(); /*테이블 뷰 인덱스 할당*/
+    if(tIndex.isValid()) {                      /*인덱스가 존재 한다면*/
+        int ID = ui->PIDLineEdit->text().toInt();   /*정수형 데이터(id)*/
+        QString name = ui->PNameLineEdit->text();   /*QString 데이터*/
+        QString company = ui->PCompanyLineEdit->text();
+        int price = ui->PPriceLineEdit->text().toInt();
+        if(name.length() && company.length() && price)  /*정보를 모두 입력해야 데이터베이스에 데이터를 할당*/
         {
-            p->setName(name);
-            p->setCompany(company);
-            p->setPrice(price);
-            productList[key] = p;
 
-            if (!productDataConnection( )) return;           /*고객 데이터베이스에 접근하지 못한 경우*/
-            QSqlQueryModel queryModel;
-            queryModel.setQuery(QString("CALL UPDATE_GOOD(%1, '%2', '%3', %4)")
-                                .arg(key).arg(name).arg(company).arg(price));     /*데이터 베이스에서 수정할 고객 정보*/
+            ProductQuery->exec(QString("CALL UPDATE_GOOD(%1, '%2', '%3', %4)")
+                               .arg(ID).arg(name).arg(company).arg(price));
+
+            ProductModel->select();
+            ui->tableView->setModel(ProductModel);      /*수정된 데이터 베이스를 호출*/
         }
     }
 }
@@ -209,23 +170,23 @@ void ProductManager::on_ModifyButton_clicked()
 /*검색 버튼 클릭시 해당되는 컬럼과 이름의 정보를 출력*/
 void ProductManager::on_Search_clicked()
 {
-    ui->SearchTreeWidget->clear();
-    int i = ui->SearchComboBox->currentIndex();
-    auto flag = (i)? Qt::MatchCaseSensitive|Qt::MatchContains
-                   : Qt::MatchCaseSensitive;
-    {
-        auto items = ui->ProductTreeWidget->findItems
-                (ui->SearchLineEdit->text(), flag, i);
+    int combo = ui->SearchComboBox->currentIndex();         /*검색 리스트의 인덱스를 할당*/
+    auto flag = (combo)? Qt::MatchCaseSensitive|Qt::MatchContains      /*매칭의 조건 옵션 추가*/
+                       : Qt::MatchCaseSensitive;            /*Qt::MatchCaseSensitive : 대소문자 구분*/
+    QModelIndexList indexes = ProductModel->match(ProductModel->index(0, combo),      /*고객 데이터 베이스의 인덱스 값을 할당*/
+                                                 Qt::EditRole,                      /*ItemEditRole의 2번째 타입*/
+                                                 ui->SearchLineEdit->text(),        /*검색 에디트의 텍스트 비교*/
+                                                 -1,                            /*flag타입을 -1로 설정 : If you want to search for all matching items, use hits = -1*/
+                                                 Qt::MatchFlags(flag));         /*상단의 flag 변수로 매칭*/
 
-        foreach(auto i, items) {
-            Product* p = static_cast<Product*>(i);
-            int id = p->getid();
-            QString name = p->getName();
-            QString company = p->getCompany();
-            int price = p->getPrice();
-            Product* item = new Product(id, name, company, price);
-            ui->SearchTreeWidget->addTopLevelItem(item);
-        }
+    foreach(auto ix, indexes) { /*인덱스값을 처음부터 끝까지 나열*/
+        //ui->SearchTreeWidget->clear();
+        int id = ProductModel->data(ix.siblingAtColumn(0)).toInt(); //해당되는 열을 출력(id에 해당하는 모든 정보)
+        QString name = ProductModel->data(ix.siblingAtColumn(1)).toString(); //name에 해당되는 열을 출력
+        QString com = ProductModel->data(ix.siblingAtColumn(2)).toString(); //com에 해당되는 열을 출력
+        int price = ProductModel->data(ix.siblingAtColumn(3)).toInt(); //price에 해당되는 열을 출력
+        Product* item = new Product(id, name, com, price);
+        ui->SearchTreeWidget->addTopLevelItem(item);
     }
 }
 
@@ -235,5 +196,34 @@ void ProductManager::on_SearchTreeWidget_itemClicked(QTreeWidgetItem *item, int 
     Q_UNUSED(column);
     ui->PNameLineEdit->setText(item->text(1));
     ui->PPriceLineEdit->setText(item->text(3));
+}
+
+
+void ProductManager::on_tableView_clicked(const QModelIndex &index) /*테이블 뷰 클릭 시 해당되는 데이터들을 에디터에 호출*/
+{
+    QString ID = index.sibling(index.row(), 0).data().toString();   /*테이블의 id를 할당*/
+    QString name = index.sibling(index.row(), 1).data().toString(); /*테이블의 이름을 할당*/
+    QString com = index.sibling(index.row(), 2).data().toString();  /*테이블의 전화번호를 할당*/
+    QString price = index.sibling(index.row(), 3).data().toString();/*테이블의 price를 할당*/
+    /*현존하는 ui 에디트에 데이터들을 출력*/
+    ui->PIDLineEdit->setText(ID);
+    ui->PNameLineEdit->setText(name);
+    ui->PCompanyLineEdit->setText(com);
+    ui->PPriceLineEdit->setText(price);
+
+    ui->toolBox->setCurrentIndex(0);    /*테이블 뷰 데이터를 클릭시 INPUT 툴 박스로 위치 조정*/
+}
+
+
+void ProductManager::on_RecentButton_clicked()      /*아이디 중 최대값을 출력*/
+{
+    ProductQuery->prepare("SELECT MAX(G_ID) FROM GOODS;");/*현존하는 아이디중 최댓값을 출력하는 쿼리문*/
+    ProductQuery->exec();            /*쿼리문 실행*/
+    while (ProductQuery->next()) {   /*쿼리문 진행*/
+        qDebug() << ProductQuery->value(0).toInt();  /*쿼리값 디버깅*/
+        ui->RecentLineEdit->setText(QString::number(ProductQuery->value(0).toInt()));    /*아이디 라인 에디트체 자동 할당 실행*/
+        ui->PIDLineEdit->setText(QString::number(ProductQuery->value(0).toInt()));       /*표시 라인 에디트에 자동 할당*/
+        //ClientModel->select();
+    }
 }
 

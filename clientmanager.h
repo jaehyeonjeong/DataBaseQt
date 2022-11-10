@@ -6,7 +6,11 @@
 class Client;                       /*client 정보를 가져오기 위해 Client class*/
 class QMenu;                        /*QMenu를 가져오기 위한 QMenu class*/
 class QTreeWidgetItem;              /*QTreeWidget을 가져오기 위한 QTreeWidgetItem class*/
-
+class QSqlTableModel;               /*QSqlTableModel을 가져오기 위한 class*/
+class QSqlQueryModel;
+class QSqlRelationalTableModel;
+class QSqlQuery;
+class QModalIndex;
 
 namespace Ui {
 class ClientManager;                /*ClientManager ui를 할당받는 클래스*/
@@ -31,8 +35,7 @@ signals:
 
 
 private slots:
-    void on_ClientTreeWidget_itemClicked(QTreeWidgetItem *item, int column);        /*clientTreeWidget의 커서를 불러오는 슬롯*/
-    void showContextMenu(const QPoint &);                                           /*마우스의 좌표에 따른 호출 슬롯*/
+    void showContextMenuTable(const QPoint &);                                      /*마우스의 좌표에 따른 호출 슬롯*/
     void removeItem();   /*고객 정보 제거 슬롯*/
 
     void on_InputButton_clicked();                                                  /*고객 정보 추가 버튼 슬롯*/
@@ -42,14 +45,20 @@ private slots:
 
     void on_ClientSearchTree_itemClicked(QTreeWidgetItem *item, int column);        /*ClientSearchTreeWidget의 커서를 불러오는 슬롯*/
 
+    void on_removeButton_clicked();
+
+    void on_tableView_clicked(const QModelIndex &index);
+    //void acceptClientInfo(int);
+
 private:
     Ui::ClientManager *ui;                              /*UI 인자(해당되는 위젯 호출)*/
     int makeID();                                       /*아이디 할당 변수*/
     QMap<int, Client*> clientList;                      /*맵 형태 고객 리스트 변수*/
     QMenu* menu;                                        /*메뉴 변수*/
 
-    /*클라이언트 용 데이터 베이스 확인 함수*/
-    static bool clientDataConnection( );
+    QSqlTableModel* ClientModel;
+    //QSqlQueryModel* ClientqueryModel;
+    QSqlQuery* clientquery;
 };
 
 #endif // CLIENTMANAGER_H

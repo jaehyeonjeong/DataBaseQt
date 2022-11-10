@@ -35,10 +35,6 @@ private slots:
 
     void on_actionmanager_triggered();      //ui에서 생성된 매니저 클라이언트를 불러오는 툴바 버튼 이벤트 핸들러
 
-    int on_actionclientDB_triggered();
-
-    int on_actionproductDB_triggered();
-
     int on_actionshoppingDB_triggered();
 
 private:

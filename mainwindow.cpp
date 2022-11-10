@@ -162,64 +162,6 @@ void MainWindow::on_actionmanager_triggered()
 }
 
 
-
-
-int MainWindow::on_actionclientDB_triggered()
-{
-    /*고객 데이터베이스가 연결되지 않았을 경우*/
-    if (!createConnection( )) return 1;
-
-    queryModel = new QSqlQueryModel;
-    queryModel->setQuery("select c_id, c_name, c_phone, c_email from CUST order by c_id asc");    /*고객 데이터베이스 출력 쿼리문*/
-    queryModel->setHeaderData(0, Qt::Horizontal, QObject::tr("c_id"));
-    queryModel->setHeaderData(1, Qt::Horizontal, QObject::tr("c_name"));
-    queryModel->setHeaderData(2, Qt::Horizontal, QObject::tr("c_phone"));
-    queryModel->setHeaderData(3, Qt::Horizontal, QObject::tr("c_email"));
-
-
-    tableview->setModel(queryModel);
-    tableview->setWindowTitle(QObject::tr("Client DataBase"));
-    tableview->show( );
-
-
-    if(tableview->isActiveWindow() == true)
-    {
-        flag = 1;
-        qDebug() << flag;
-    }
-    else
-    {
-        flag = 1000;
-        qDebug() << flag;
-    }
-}
-
-
-int MainWindow::on_actionproductDB_triggered()
-{
-    if (!createConnection( )) return 1;
-
-    queryModel = new QSqlQueryModel;
-    queryModel->setQuery("select g_id, g_name, g_com, g_price from GOODS order by g_id asc");    /*상품 데이터베이스 출력 쿼리문*/
-    queryModel->setHeaderData(0, Qt::Horizontal, QObject::tr("g_id"));
-    queryModel->setHeaderData(1, Qt::Horizontal, QObject::tr("g_name"));
-    queryModel->setHeaderData(2, Qt::Horizontal, QObject::tr("g_com"));
-    queryModel->setHeaderData(3, Qt::Horizontal, QObject::tr("g_price"));
-
-    //tableview = new QTableView;
-    tableview->setModel(queryModel);
-    tableview->setWindowTitle(QObject::tr("Product DataBase"));
-    tableview->show( );
-    flag = 2;
-    qDebug() << flag;
-    if(!isActiveWindow())
-    {
-        flag = 1000;
-        qDebug() << flag;
-    }
-}
-
-
 int MainWindow::on_actionshoppingDB_triggered()
 {
     if (!createConnection( )) return 1;

@@ -5,16 +5,18 @@
 #include <QFile>
 #include <QMenu>
 #include <iostream>
+#include <QTableWidgetItem>
 
 /*Oracle SQL 연동을 위한 헤더*/
 #include <QTableView>
 #include <QSqlQueryModel>
+#include <QSqlTableModel>
+#include <QSqlRelationalTableModel>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
+#include <QSqlRecord>
 
-
-using namespace std;
 
 ClientManager::ClientManager(QWidget *parent) :
     QWidget(parent),
@@ -28,211 +30,204 @@ ClientManager::ClientManager(QWidget *parent) :
 
     menu = new QMenu;                                                   /*메뉴 할당*/
     menu->addAction(removeAction);                                      /*메뉴에 removeAction 추가*/
-    ui->ClientTreeWidget->setContextMenuPolicy(Qt::CustomContextMenu);  /*contextMenuEvent() 처리기가 호출됨을 의미*/
-    connect(ui->ClientTreeWidget, SIGNAL(customContextMenuRequested(QPoint)),
-            this, SLOT(showContextMenu(QPoint)));
 
-    /*데이터 보내기*/
+    ui->tableView->setContextMenuPolicy(Qt::CustomContextMenu);         /*테이블 뷰에서 메뉴 정의*/
+    connect(ui->tableView, SIGNAL(customContextMenuRequested(QPoint)),
+            this, SLOT(showContextMenuTable(QPoint)));                  /*컨텍스트 메뉴가 나올 수 있게끔 생성*/
+
+    /*고객의 성함 데이터 보내기*/
     connect(ui->CNameLineEdit, SIGNAL(textChanged(QString)),
             this, SIGNAL(ClientAdded(QString)));
 
-    ui->CPhoneLineEdit->setCursorPosition(1);
+    ui->CPhoneLineEdit->setCursorPosition(1);       /*전화번호 자동라인 맞춤*/
+
     //connect(this, SIGNAL(TCPClientAdded(int,QString)), this, SLOT(loadData()));
 }
 
 void ClientManager::loadData()                  /*고객의 정보를 택스트로 저장*/
 {
-    /*파일 불러오기*/
-    QFile file("clientlist.txt");
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-        return;
+    /*데이터 베이스의 데이터들을 불러오기*/
+    QSqlDatabase db = QSqlDatabase::addDatabase("QODBC", "clientConnection");
+    /*추가하려는 데이터베이스 종류는 QODBC(Qt Oracle DataBase)*/
+    db.setDatabaseName("Oracle11g");            /*데이터베이스 이름*/
+    db.setUserName("projectDB");                /*데이터 베이스 계정 명*/
+    db.setPassword("1234");                     /*데이터 베이스 비밀번호*/
 
-    QTextStream in(&file);
-    while (!in.atEnd()) {
-        QString line = in.readLine();
-        QList<QString> row = line.split(", ");
-        if(row.size()) {
-            int id = row[0].toInt();
-            Client* c = new Client(id, row[1], row[2], row[3]); /*고객의 데이터를 1행의 각열로 구분 (1행 4열)*/
-            ui->ClientTreeWidget->addTopLevelItem(c);           /*고객의 정보를 리스트에 저장*/
-            clientList.insert(id, c);                           /*map을 써서 insert로 데이터를 삽입*/
-            emit TCPClientAdded(id, row[1]);                    /*채팅 서버에 해당하는 고객을 추가*/
-            emit ClientAdded(row[1]);
-        }
+    if (db.open()) {
+        clientquery = new QSqlQuery(db);
+        ClientModel = new QSqlTableModel(this, db);
+
+        ClientModel->setTable("CUST");
+        clientquery->exec("SELECT * FROM CUST ORDER BY C_ID ASC");
+        ClientModel->select();
+
+
+        /*고객 데이터베이스 출력 쿼리문*/
+        ClientModel->setHeaderData(0, Qt::Horizontal, QObject::tr("c_id"));
+        ClientModel->setHeaderData(1, Qt::Horizontal, QObject::tr("c_name"));
+        ClientModel->setHeaderData(2, Qt::Horizontal, QObject::tr("c_phone"));
+        ClientModel->setHeaderData(3, Qt::Horizontal, QObject::tr("c_email"));
+
+        ui->tableView->setModel(ClientModel);
     }
-    file.close( );
-
-    //    QModelIndex i = ui->ClientTreeWidget->currentIndex();
-    //    ui->ClientTreeWidget->setRowHidden(0, i, true);
-    //    ui->ClientTreeWidget->setRowHidden(1, i, true);
+    for(int i = 0; i < ClientModel->rowCount(); i++){                       /*로우 카운트를 이용하여 데이터를 가지고 오는 함수*/
+        int id = ClientModel->data(ClientModel->index(i, 0)).toInt();       /*로우와 컬럼 값으로 아이디와 이름 할당*/
+        QString name = ClientModel->data(ClientModel->index(i, 1)).toString();
+        emit TCPClientAdded(id, name);
+    }
 }
 
 ClientManager::~ClientManager()
 {
     delete ui;
+    //delete[] pnum;
+    //free(pnum);
+    //QSqlDatabase db = ClientModel->database();  /*db는 현재 가지고 있는 데이터 베이스*/
+    QSqlDatabase db = QSqlDatabase::database("clientConnection");
+    if(db.isOpen())                     /*데이터 베이스가 열려있다면*/
+    {
+        ClientModel->submitAll();
+        /*보류 중인 모든 변경 사항을 제출하고 성공하면 true를 반환합니다.
+         * 오류 시 false를 반환하고 lastError()를 사용하여 자세한 오류 정보를 얻을 수 있습니다.*/
 
-    /*파일 저장*/
-    QFile file("clientlist.txt");
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) /*쓰기 형태인 텍스트 텍스트형태로 파일 열기*/
-        return;
-
-    QTextStream out(&file);
-    //out << "clientID, clientName, clientPhone, clientEmail\n";
-    for (const auto& v : clientList) {
-        Client* c = v;
-        out << c->id() << ", " << c->getName() << ", ";
-        out << c->getPhoneNumber() << ", ";
-        out << c->getAddress() << "\n";         /*고객의 아이디, 성함, 전화번호, 주소 저장*/
+        db.close();
+        //db.removeDatabase("QODBC");     /*할당되어 있는 QODBC를 제거*/
+        QSqlDatabase::removeDatabase("clientConnection");
     }
-    file.close( );
-    //close의 반환형은 int 인데 정상적으로 파일을 닫았을 땐 0을 반환하고 그렇지 않을땐 EOF (-1)을 반환합니다.
-}
-
-/*database에 연동이 되는지 확인하는 함수*/
-bool ClientManager::clientDataConnection()
-{
-    QSqlDatabase db = QSqlDatabase::addDatabase("QODBC");   /*추가하려는 데이터베이스 종류는 QODBC(Qt Oracle DataBase)*/
-    db.setDatabaseName("Oracle11g");            /*데이터베이스 이름*/
-    db.setUserName("projectDB");                /*데이터 베이스 계정 명*/
-    db.setPassword("1234");                     /*데이터 베이스 비밀번호*/
-    if (!db.open()) {
-        qDebug() << db.lastError().text();
-    } else {
-        qDebug("success");
-    }
-
-    return true;
 }
 
 int ClientManager::makeID( )        /*고객의 아이디 자동 할당*/
 {
-    if(clientList.size( ) == 0) {       /*고객의 정보에 어떤 데이터도 없을 때*/
+    if(ClientModel->rowCount() == 0) {       /*고객 데이터 베이스 정보에 어떤 데이터도 없을 때*/
         return 1;                   /*ID를 1부터 시작*/
     } else {
-        auto id = clientList.lastKey();   /*고객정보중 최근 정보의 id에 접근*/
+        int id = ui->CIDLineEdit->text().toInt();   /*원인은 모르겠지만 ui 라인 에디트로 내 코드는 접근해야 g함*/
+        //int id = ClientModel->data(ClientModel->index(ClientModel->rowCount() - 1, 0)).toInt();
+        /*고객정보중 최근 정보의 id에 접근*/
+        qDebug() << "id : " << id;
         return ++id;                    /*최근 아이디에 + 1 연산*/
     }
 }
 
 void ClientManager::removeItem()                /*아이템을 제거하는 함수*/
 {
-    QTreeWidgetItem* item = ui->ClientTreeWidget->currentItem();        /*아이템 할당*/
-    if(item != nullptr) {                                   /*데이터가 없지 않는다면*/
-        int index = ui->ClientTreeWidget->currentIndex().row();     /*각열에 맞는 인덱스 반환*/
-        clientList.remove(item->text(0).toInt());           /*해당 아이디를 리스트에서 제거*/
-        ui->ClientTreeWidget->takeTopLevelItem              /*고객의 정보 리스트에서 아이템을 지움*/
-                (ui->ClientTreeWidget->indexOfTopLevelItem(item));
-        ui->ClientTreeWidget->update();                 /*최신화*/
-        emit ClientRemove(index);                   /*인덱스 값을 시그널로 보냄*/
+    int idx = ui->CIDLineEdit->text().toInt();      /*채팅 서버 클라이언트에 보낼 인덱스*/
+    qDebug() << "remove id : " << idx;
 
+    if(idx){        /*index 값이 존재하는 경우*/
+        clientquery->exec(QString("CALL DELETE_CUST(%1)").arg(idx));    /*해당하는 인덱스 데이터를 지우는 프로시져 호출*/
+        ClientModel->select();      /*해당 테이블 호출*/
+        //ui->tableView->setModel(ClientModel);   /*테이블 모델 셋*/
+        ui->tableView->update();
+        emit ClientRemove(idx);     /*서버 대기방에 없는 이름의 클라이언트는 삭제하는 시그널*/
     }
-    if (!clientDataConnection( )) return;           /*고객 데이터베이스에 접근하지 못한 경우*/
-    QSqlQueryModel queryModel;
-    queryModel.setQuery(QString("CALL DELETE_CUST(%1)").arg(item->text(0).toInt()));     /*데이터 베이스에서 삭제할 고객 정보*/
+
+
 }
 
-void ClientManager::showContextMenu(const QPoint &pos)      /*컨택스트 메뉴*/
+void ClientManager::showContextMenuTable(const QPoint &pos)      /*컨택스트 메뉴*/
 {
-    QPoint globalPos = ui->ClientTreeWidget->mapToGlobal(pos);
-    menu->exec(globalPos);
+    QPoint globalPos = ui->tableView->mapToGlobal(pos);     /*마우스의 위치에 표시*/
+    if(ui->tableView->indexAt(pos).isValid())               /*마우스로 테이블데이터의 우클릭을 했을 시*/
+        menu->exec(globalPos);                              /*컨택스트 메뉴 실행*/
 }
 
 
 void ClientManager::on_InputButton_clicked()        /*input버튼 클릭 시 발생하는 이벤트 핸들러*/
 {
-    QString name, number, address;
-    int id = makeID( );
-    /**/
-    name = ui->CNameLineEdit->text();
-    number = ui->CPhoneLineEdit->text();
-    address = ui->CEmailLineEdit->text();
-    if(name.length() && number.length() && address.length()) {
-        Client* c = new Client(id, name, number, address);
-        clientList.insert(id, c);
-        ui->ClientTreeWidget->addTopLevelItem(c);
-        emit TCPClientAdded(id, name);
-        emit ClientAdded(name);
+    QString name, number, address;              /*고객 정보 테이블에 들어갈 데이터 변수*/
+    int id = makeID( );                         /*아이디는 자동으로 생성*/
+    //QModelIndex tIndex = ui->tableView->currentIndex();             /*테이블 뷰에 인덱스*/
 
-        /*고객 데이터베이스가 연결되지 않았을 경우*/
-        if (!clientDataConnection( )) return;
+    ui->CIDLineEdit->setText(QString::number(id));      /*아이디 라인에디트에 아이디 할당*/
+    name = ui->CNameLineEdit->text();                   /*이름 라인에디트 이름 할당*/
+    number = ui->CPhoneLineEdit->text();                /*전화번호 라인에디트 전화번호 할당*/
+    address = ui->CEmailLineEdit->text();               /*이메일 라인에디트 이메일 할당*/
+    if(id && name.length() && number.length() && address.length()) {
+        //clientquery(ClientModel->database());       /*고객의 데이터베이스를 가져옴*/
+        /*오라클 내의 프로시져를 사용*/
+#if 1
+        clientquery->exec(QString("CALL INSERT_CUST(%1, '%2', '%3', '%4')")
+                          .arg(id).arg(name).arg(number).arg(address));
+        ClientModel->select();                          /*릴레이션 테이블 호출*/
 
-        QSqlQueryModel queryModel;
-        queryModel.setQuery(QString("CALL INSERT_CUST(%1, '%2', '%3', '%4')").arg(id).arg(name).arg(number).arg(address));
-        /*고객 정보로 들어갈 데이터*/
+        ui->tableView->setModel(ClientModel);           /*테이븛 뷰에 띄우가*/
+#else
+
+        /*데이터를 입력하기 전에 최근 데이터를 클릭하고 데이터를 입력 해야지 새롭게 데이터가 입력된다*/
+        clientquery->prepare("INSERT INTO CUST VALUES (?, ?, ?, ?)");
+        clientquery->bindValue(0, id);
+        clientquery->bindValue(1, name);
+        clientquery->bindValue(2, number);
+        clientquery->bindValue(3, address);
+        clientquery->exec();
+        ClientModel->select();
+
+        //ClientModel->QSqlQueryModel::setQuery("SELECT * FROM CUST ORDER BY C_ID");
+
+        ui->tableView->setModel(ClientModel);           /*테이븛 뷰에 띄우가*/
+#endif
+        emit TCPClientAdded(id, name);      /*고객의 정보를 추가할 시 이름만 보내는 시그널 서버에서 데이터를 받고 갱신*/
     }
-
-
 }
 
 
 void ClientManager::on_CancelButton_clicked()       /*고객 관리 정보 에디터의 모든 라인 에디터를 비워주는 버튼 슬롯*/
 {
-    ui->CIDLineEdit->setText("");
-    ui->CNameLineEdit->setText("");
-    ui->CPhoneLineEdit->setText("");
-    ui->CEmailLineEdit->setText("");
+    ui->CIDLineEdit->setText("");               /*고객의 아이디 에디트 공백*/
+    ui->CNameLineEdit->setText("");             /*고객의 성함 에디트 공백*/
+    ui->CPhoneLineEdit->setText("");            /*고객의 전화번호 에디트 공백*/
+    ui->CEmailLineEdit->setText("");            /*고객의 이메일 에디트 공백*/
 }
 
 void ClientManager::on_ModifyButton_clicked()           /*고객 관리 데이터를 수정하기 위한 버튼 슬롯*/
 {
-    QTreeWidgetItem* item = ui->ClientTreeWidget->currentItem();    /*고객의 트리 리스트의 아이템을 할당*/
-    if(item != nullptr) {
-        int index = ui->ClientTreeWidget->currentIndex().row();     /*인덱스 값은 할당된 아이템의 1행 부분*/
-        int key = item->text(0).toInt();                /*id가 고객정보의 키가 되어버림 */
-        Client* c = clientList[key];                    /*고객 관리 데이터의 key값 할당*/
-        QString name, number, address;
+    QModelIndex tIndex = ui->tableView->currentIndex(); /*테이블 뷰 인덱스 할당*/
+    int index = ui->tableView->currentIndex().row();
+    if(tIndex.isValid()){                   /*인덱스가 존재 한다면*/
+        int ID = ui->CIDLineEdit->text().toInt();   /*정수형 데이터*/
+        QString name = ui->CNameLineEdit->text();      /*QString 데이터*/
+        QString phone = ui->CPhoneLineEdit->text();
+        QString address = ui->CEmailLineEdit->text();
+        //qDebug() << ID << name << phone << address;
 
-        name = ui->CNameLineEdit->text();               /*QString 타입으로 지정된 변수의 라인에디터 변수 재선언*/
-        number = ui->CPhoneLineEdit->text();
-        address = ui->CEmailLineEdit->text();
-        if(name.length() && number.length() && address.length()) {
-            c->setName(name);                               /*이름, 전화번호, 이메일 수정*/
-            c->setPhoneNumber(number);
-            c->setAddress(address);
-            clientList[key] = c;
-            emit TCPClientModify(key, name, index);         /*고객의 데이터를 수정할 시 서버의 클라이언트 리스트 에도 수정*/
+        if(name.length() && phone.length() && address.length())
+        {
+            clientquery->exec(QString("CALL UPDATE_CUST(%1, '%2', '%3', '%4')")
+                              .arg(ID).arg(name).arg(phone).arg(address));
 
-            if (!clientDataConnection( )) return;           /*고객 데이터베이스에 접근하지 못한 경우*/
-            QSqlQueryModel queryModel;
-            queryModel.setQuery(QString("CALL UPDATE_CUST(%1, '%2', '%3', '%4')")
-                                .arg(key).arg(name).arg(number).arg(address));     /*데이터 베이스에서 수정할 고객 정보*/
+            clientquery->exec(QString("select * from CUST ORDER BY C_ID"));
+            ClientModel->select();
+
+            ui->tableView->setModel(ClientModel);           /*수정 전*/
+            emit TCPClientModify(ID, name, index);
+            /*고객의 데이터를 수정할 시 서버의 클라이언트 리스트 에도 수정*/
         }
     }
-}
-
-
-void ClientManager::on_ClientTreeWidget_itemClicked(QTreeWidgetItem *item, int column)
-{
-    Q_UNUSED(column);
-    ui->CIDLineEdit->setText(item->text(0));
-    ui->CNameLineEdit->setText(item->text(1));
-    ui->CPhoneLineEdit->setText(item->text(2));
-    ui->CEmailLineEdit->setText(item->text(3));
-
-    ui->toolBox->setCurrentIndex(0);
-    //emit TCPClientAdded(item->text(0).toInt(), item->text(1));
 }
 
 
 void ClientManager::on_SearchButton_clicked()
 {
     ui->ClientSearchTree->clear();                      /*검색 리스트를 클리어*/
-    int i = ui->SearchComboBox->currentIndex();         /*검색 리스트의 인덱스를 할당*/
-    auto flag = (i)? Qt::MatchCaseSensitive|Qt::MatchContains      /*매칭의 조건 옵션 추가*/
-                   : Qt::MatchCaseSensitive;            /*Qt::MatchCaseSensitive : 대소문자 구분*/
-    {                                                   /*Qt::MatchContains : 검색어가 항목에 포함되어 있는지를 구분*/
-        auto items = ui->ClientTreeWidget->findItems
-                (ui->SearchLineEdit->text(), flag, i);  /*검색 옵션에 맞는 정보를 컬럼별로 찾음*/
+    int combo = ui->SearchComboBox->currentIndex();         /*검색 리스트의 인덱스를 할당*/
+    auto flag = (combo)? Qt::MatchCaseSensitive|Qt::MatchContains      /*매칭의 조건 옵션 추가*/
+                       : Qt::MatchCaseSensitive;            /*Qt::MatchCaseSensitive : 대소문자 구분*/
 
-        foreach(auto i, items) {
-            Client* c = static_cast<Client*>(i);
-            int id = c->id();
-            QString name = c->getName();
-            QString number = c->getPhoneNumber();
-            QString address = c->getAddress();
-            Client* item = new Client(id, name, number, address);
-            ui->ClientSearchTree->addTopLevelItem(item);
-        }
+    QModelIndexList indexes = ClientModel->match(ClientModel->index(0, combo),      /*고객 데이터 베이스의 인덱스 값을 할당*/
+                                                 Qt::EditRole,                      /*ItemEditRole의 2번째 타입*/
+                                                 ui->SearchLineEdit->text(),        /*검색 에디트의 텍스트 비교*/
+                                                 -1,                            /*flag타입을 -1로 설정 : If you want to search for all matching items, use hits = -1*/
+                                                 Qt::MatchFlags(flag));         /*상단의 flag 변수로 매칭*/
+
+    foreach(auto ix, indexes) { /*인덱스값을 처음부터 끝까지 나열*/
+        //ui->ClientSearchTree->clear();
+        int id = ClientModel->data(ix.siblingAtColumn(0)).toInt(); //해당되는 열을 출력(id에 해당하는 모든 정보)
+        QString name = ClientModel->data(ix.siblingAtColumn(1)).toString(); //name에 해당되는 열을 출력
+        QString number = ClientModel->data(ix.siblingAtColumn(2)).toString(); //number에 해당되는 열을 출력
+        QString address = ClientModel->data(ix.siblingAtColumn(3)).toString(); //address에 해당되는 열을 출력
+        Client* item = new Client(id, name, number, address);
+        ui->ClientSearchTree->addTopLevelItem(item);
     }
 }
 
@@ -241,5 +236,84 @@ void ClientManager::on_ClientSearchTree_itemClicked(QTreeWidgetItem *item, int c
 {
     Q_UNUSED(column);
     ui->CNameLineEdit->setText(item->text(1));
+}
+
+
+void ClientManager::on_removeButton_clicked()       /*해당하는 고객의 아이디중 최대값인 아이디를  구하는 코드*/
+{
+#if 1
+    clientquery->prepare("SELECT MAX(C_ID) FROM CUST;");/*현존하는 아이디중 최댓값을 출력하는 쿼리문*/
+    clientquery->exec();            /*쿼리문 실행*/
+    while (clientquery->next()) {   /*쿼리문 진행*/
+        qDebug() << clientquery->value(0).toInt();  /*쿼리값 디버깅*/
+        ui->RemoveLineEdit->setText(QString::number(clientquery->value(0).toInt()));    /*아이디 라인 에디트체 자동 할당 실행*/
+        ui->CIDLineEdit->setText(QString::number(clientquery->value(0).toInt()));       /*표시 라인 에디트에 자동 할당*/
+        //ClientModel->select();
+    }
+
+#else
+    /*클라이언트 데이터 정보중 ID가 가장 큰값인 아이디를 도출하기 위한 코드*/
+    int leng = ClientModel->rowCount();
+    //int pnum[10000] = {0,};
+    int* pnum = (int *)malloc(sizeof(int) * leng);
+    int tmp = 0;
+
+    for(int i = 0; i < leng; i++)
+    {
+        pnum[i] = ClientModel->data(ClientModel->index(i, 0)).toInt();
+    }
+
+    for(int i = 0 ; i < leng - 1; i++)
+    {
+        for(int j = leng - 1; j > 0; j--)
+        {
+            if(pnum[i] < pnum[j])
+            {
+                tmp = pnum[i];
+                pnum[i] = pnum[j];
+                pnum[j] = tmp;
+            }
+        }
+    }
+
+    qDebug() << pnum[0] << " " << pnum[1] << " " << pnum[3];
+    qDebug() << ClientModel->rowCount();
+    ui->RemoveLineEdit->setText(QString::number(pnum[0]));
+    ui->CIDLineEdit->setText(QString::number(pnum[0]));
+
+
+#endif
+
+    /*강사님께 질문 하기*/
+    //ui->RemoveLineEdit->setText(ClientModel->query.record(0));
+
+    //ui->tableView->(clientquery);           /*수정 전*/
+
+}
+
+//void ClientManager::acceptClientInfo(int key)
+//{
+
+//}
+
+
+void ClientManager::on_tableView_clicked(const QModelIndex& index)  /*테이블 뷰 클릭 시 해당되는 데이터들을 에디터에 호출*/
+{
+    Q_UNUSED(index);
+    QModelIndex tIndex = ui->tableView->currentIndex();             /*테이블 뷰에 인덱스*/
+    QString ID = tIndex.sibling(tIndex.row(), 0).data().toString(); /*테이블의 id를 에디트로 가져오기*/
+    QString name = tIndex.sibling(tIndex.row(), 1).data().toString();   /*테이블의 name을 에디트로 가져오기*/
+    QString phone = tIndex.sibling(tIndex.row(), 2).data().toString();  /*테이블의 전화번호를 에디트로 가져오기*/
+    QString address = tIndex.sibling(tIndex.row(), 3).data().toString();    /*테이블의 이메일을 에디트로 가져오기*/
+    //qDebug() << ID << " " << name << " " << phone << " "  << address;
+
+    /*현존하는 ui에디트에 출력*/
+    ui->CIDLineEdit->setText(ID);
+    ui->CNameLineEdit->setText(name);
+    ui->CPhoneLineEdit->setText(phone);
+    ui->CEmailLineEdit->setText(address);
+    emit ClientAdded(name);
+
+    ui->toolBox->setCurrentIndex(0);
 }
 

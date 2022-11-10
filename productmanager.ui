@@ -19,28 +19,7 @@
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
-     <widget class="QTreeWidget" name="ProductTreeWidget">
-      <column>
-       <property name="text">
-        <string>ProductID</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>ProductName</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>ProductCompany</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>ProductPrice</string>
-       </property>
-      </column>
-     </widget>
+     <widget class="QTableView" name="tableView"/>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
        <number>0</number>
@@ -50,7 +29,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>288</width>
+         <width>326</width>
          <height>316</height>
         </rect>
        </property>
@@ -120,6 +99,20 @@
          </spacer>
         </item>
         <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <item>
+           <widget class="QLineEdit" name="RecentLineEdit"/>
+          </item>
+          <item>
+           <widget class="QPushButton" name="RecentButton">
+            <property name="text">
+             <string>Recent</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
            <spacer name="horizontalSpacer">
@@ -177,7 +170,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>288</width>
+         <width>326</width>
          <height>316</height>
         </rect>
        </property>

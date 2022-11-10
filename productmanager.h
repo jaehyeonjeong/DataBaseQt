@@ -1,11 +1,18 @@
 #ifndef PRODUCTMANAGER_H
 #define PRODUCTMANAGER_H
 
+#include "qsqldatabase.h"
 #include <QWidget>
 
 class Product;
 class QMenu;
 class QTreeWidgetItem;
+class QSqlQueryModel;
+class QSqlRelationalTableModel;
+class QSqlQuery;
+class QModalIndex;
+class QSqlDatabase;
+class QSqlTableModel;
 
 namespace Ui {
 class ProductManager;
@@ -24,16 +31,16 @@ signals:
     void ProductPrices(QString);
 
 private slots:
-    void on_ProductTreeWidget_itemClicked(QTreeWidgetItem *item, int column);
     void showContextItem(const QPoint&);
     void removeItem();
     void on_InputButton_clicked();
     void on_CancelButton_clicked();
     void on_ModifyButton_clicked();
     void on_Search_clicked();
-
-
     void on_SearchTreeWidget_itemClicked(QTreeWidgetItem *item, int column);
+    void on_tableView_clicked(const QModelIndex &index);
+
+    void on_RecentButton_clicked();
 
 private:
     Ui::ProductManager *ui;
@@ -41,8 +48,9 @@ private:
     QMap<int, Product*>productList;
     QMenu* menu;
 
-    /*프로덕트 용 데이터 베이스 확인 함수*/
-    static bool productDataConnection( );
+    QSqlTableModel* ProductModel;
+    QSqlQueryModel* ProductqueryModel;
+    QSqlQuery* ProductQuery;
 };
 
 #endif // PRODUCTMANAGER_H
