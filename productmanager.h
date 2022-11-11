@@ -13,6 +13,7 @@ class QSqlQuery;
 class QModalIndex;
 class QSqlDatabase;
 class QSqlTableModel;
+class QStandardItemModel;
 
 namespace Ui {
 class ProductManager;
@@ -37,10 +38,9 @@ private slots:
     void on_CancelButton_clicked();
     void on_ModifyButton_clicked();
     void on_Search_clicked();
-    void on_SearchTreeWidget_itemClicked(QTreeWidgetItem *item, int column);
     void on_tableView_clicked(const QModelIndex &index);
-
     void on_RecentButton_clicked();
+    void on_TBSearchView_clicked(const QModelIndex &index);
 
 private:
     Ui::ProductManager *ui;
@@ -49,8 +49,9 @@ private:
     QMenu* menu;
 
     QSqlTableModel* ProductModel;
-    QSqlQueryModel* ProductqueryModel;
     QSqlQuery* ProductQuery;
+
+    QStandardItemModel* SearchModel;        /*검색을 하기 위한 모델 변수 선언*/
 };
 
 #endif // PRODUCTMANAGER_H

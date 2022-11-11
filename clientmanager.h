@@ -9,6 +9,7 @@ class QTreeWidgetItem;              /*QTreeWidget을 가져오기 위한 QTreeWi
 class QSqlTableModel;               /*QSqlTableModel을 가져오기 위한 class*/
 class QSqlQueryModel;
 class QSqlRelationalTableModel;
+class QStandardItemModel;
 class QSqlQuery;
 class QModalIndex;
 
@@ -41,14 +42,10 @@ private slots:
     void on_InputButton_clicked();                                                  /*고객 정보 추가 버튼 슬롯*/
     void on_CancelButton_clicked();                                                 /*고객 정보 추가 취소 버튼 슬롯*/
     void on_ModifyButton_clicked();                                                 /*고객 정보 수정 버튼 슬롯*/
-    void on_SearchButton_clicked();                                                 /*고객 정보 검색 버튼 슬롯*/
-
-    void on_ClientSearchTree_itemClicked(QTreeWidgetItem *item, int column);        /*ClientSearchTreeWidget의 커서를 불러오는 슬롯*/
-
     void on_removeButton_clicked();
-
     void on_tableView_clicked(const QModelIndex &index);
-    //void acceptClientInfo(int);
+    void on_TBpushButton_clicked();                     /*데이터 베이스에서 찾고자 하는 데이터를 찾기 위한 버튼*/
+    void on_searchTableView_clicked(const QModelIndex &index);
 
 private:
     Ui::ClientManager *ui;                              /*UI 인자(해당되는 위젯 호출)*/
@@ -57,8 +54,9 @@ private:
     QMenu* menu;                                        /*메뉴 변수*/
 
     QSqlTableModel* ClientModel;
-    //QSqlQueryModel* ClientqueryModel;
     QSqlQuery* clientquery;
+
+    QStandardItemModel* SearchModel;                    /*검색을 하기위한 모델 변수 선언*/
 };
 
 #endif // CLIENTMANAGER_H

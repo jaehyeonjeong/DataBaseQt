@@ -23,7 +23,7 @@ TCPServer::TCPServer(QWidget *parent) :
 {
     ui->setupUi(this);
     QList<int> sizes;
-    sizes << 200 << 400;
+    sizes << 120 << 480;
     ui->splitter->setSizes(sizes);
 
     /*채팅을 위한 서버 할당*/
@@ -39,7 +39,7 @@ TCPServer::TCPServer(QWidget *parent) :
         return;
     }
 
-    /*파일 선송을 위한 서버*/
+    /*파일 전송을 위한 서버*/
     fileServer = new QTcpServer(this);
     connect(fileServer, SIGNAL(newConnection()), SLOT(acceptConnection()));
     /*accpetConnection 파일 전송을 위한 커넥트*/

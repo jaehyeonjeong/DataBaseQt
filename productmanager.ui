@@ -22,7 +22,7 @@
      <widget class="QTableView" name="tableView"/>
      <widget class="QToolBox" name="toolBox">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="InputPage">
        <property name="geometry">
@@ -179,28 +179,7 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <widget class="QTreeWidget" name="SearchTreeWidget">
-          <column>
-           <property name="text">
-            <string>ProductID</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>ProductName</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>ProductCompany</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>ProductPrice</string>
-           </property>
-          </column>
-         </widget>
+         <widget class="QTableView" name="TBSearchView"/>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_4">

@@ -7,6 +7,7 @@ class Shopping;
 class QTreeWidgetItem;
 class QSqlTableModel;
 class QSqlQuery;
+class QStandardItemModel;
 
 namespace Ui {
 class ShoppingManager;
@@ -31,7 +32,6 @@ public slots:
     void on_CancelButton_clicked();
     void on_ModifyButton_clicked();
     void on_SearchButton_clicked();
-    void on_SDateLineEdit_returnPressed();
     void on_tableView_clicked(const QModelIndex &index);
     void on_RecentButton_clicked();
 
@@ -43,6 +43,8 @@ private:
 
     QSqlTableModel* ShoppingModel;
     QSqlQuery* ShoppingQuery;
+
+    QStandardItemModel* SearchModel;
 };
 
 #endif // SHOPPINGMANAGER_H

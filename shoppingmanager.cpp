@@ -1,6 +1,5 @@
 #include "shoppingmanager.h"
 #include "ui_shoppingmanager.h"
-#include "shopping.h"
 
 #include <QList>
 #include <QStringList>
@@ -16,6 +15,7 @@
 #include <QSqlQueryModel>
 #include <QSqlTableModel>
 #include <QSqlRelationalTableModel>
+#include <QStandardItemModel>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
@@ -62,7 +62,17 @@ ShoppingManager::ShoppingManager(QWidget *parent) :
         ShoppingModel->setHeaderData(5, Qt::Horizontal, QObject::tr("o_allprice"));
 
         ui->tableView->setModel(ShoppingModel);
+        ui->tableView->resizeColumnsToContents();       /*데이터 사이즈에 맞게 열을 정렬*/
     }
+
+    SearchModel = new QStandardItemModel(0, 6);                         /*행렬중 row = 0, column = 4로 초기화*/
+    SearchModel->setHeaderData(0, Qt::Horizontal, tr("ID"));            /*1번째 column 이름을 ID*/
+    SearchModel->setHeaderData(1, Qt::Horizontal, tr("ClientName"));    /*2번째 column 이름을 ClientName*/
+    SearchModel->setHeaderData(2, Qt::Horizontal, tr("ProductName"));  /*3번째 column 이름을 ProductNumber*/
+    SearchModel->setHeaderData(3, Qt::Horizontal, tr("Date"));         /*4번째 column 이름을 Date로 설정*/
+    SearchModel->setHeaderData(4, Qt::Horizontal, tr("Quan"));          /*5번째 column 이름을 Quan으로 설정*/
+    SearchModel->setHeaderData(5, Qt::Horizontal, tr("AllPrice"));     /*6번째 column 이름을 AllPrice로 설정*/
+    ui->TBSearchView->setModel(SearchModel);                         /*테이블 뷰 위젯에 SearchModel 추가*/
 }
 
 ShoppingManager::~ShoppingManager()
@@ -144,6 +154,7 @@ void ShoppingManager::on_InputButton_clicked()      /*구매 정보 데이터 �
                             .arg(id).arg(client).arg(product).arg(quan));
         ShoppingModel->select();                    /*릴레이션 테이블 호출*/
         ui->tableView->setModel(ShoppingModel);     /*테이블 뷰에 띄우기*/
+        ui->tableView->resizeColumnsToContents();       /*데이터 사이즈에 맞게 열을 정렬*/
     }
 }
 
@@ -175,6 +186,7 @@ void ShoppingManager::on_ModifyButton_clicked()     /*구매 정보를 수정했
             /*구매 정보 업데이트 프로시져 호출*/
             ShoppingModel->select();    /*테이블 호출*/
             ui->tableView->update();    /*테이블 업데이트*/
+            ui->tableView->resizeColumnsToContents();       /*데이터 사이즈에 맞게 열을 정렬*/
         }
     }
 }
@@ -182,36 +194,40 @@ void ShoppingManager::on_ModifyButton_clicked()     /*구매 정보를 수정했
 
 void ShoppingManager::on_SearchButton_clicked()         /*검색 버튼을 눌렀을 시 탐색하여 해당 데이터의 정보를 호출*/
 {
-    ui->SearchTreeWidget->clear();                      /*검색 리스트를 클리어*/
-    int combo = ui->comboBox->currentIndex();           /*검색 콤보박스 인덱스 할당*/
-    auto flag = (combo)? Qt::MatchCaseSensitive|Qt::MatchContains   /*매칭의 조건 옵션 설정*/
-                       : Qt::MatchCaseSensitive;
-    QModelIndexList indexes = ShoppingModel->match(ShoppingModel->index(0, combo),
-                                                   Qt::EditRole,
-                                                   ui->SearchLineEdit->text(),
-                                                   -1,
-                                                   Qt::MatchFlags(flag));
+    SearchModel->clear();                                          /*SearhModel 초기화*/
+    int i = ui->comboBox->currentIndex();                    /*콤보박스에 해당하는 인덱스 변수 선언*/
+    auto flag = (i) ? Qt::MatchCaseSensitive|Qt::MatchContains     /*검색 플래그 매칭 조건*/
+                    : Qt::MatchCaseSensitive;
+    QModelIndexList indexs = ShoppingModel->match(ShoppingModel->index(0, i),   /*match() 파라미터에 따른 검색 리스트 인덱스 나열*/
+             Qt::EditRole, ui->SearchLineEdit->text(), -1, Qt::MatchFlags(flag));
 
-    foreach(auto ix, indexes){      /*검색된 정보들을 처음부터 끝까지 나열*/
-        int id = ShoppingModel->data(ix.siblingAtColumn(0)).toInt();                    //아이디 변수 선언
-        QString clientname = ShoppingModel->data(ix.siblingAtColumn(1)).toString();     //고객 성함 변수 선언
-        QString productname = ShoppingModel->data(ix.siblingAtColumn(2)).toString();    //상품 이름 변수 선언
-        QString date = ShoppingModel->data(ix.siblingAtColumn(3)).toString();           //구매 정보 날짜 변수 선언
-        int quan = ShoppingModel->data(ix.siblingAtColumn(4)).toInt();                  //구매 정보 수량 변수 선언
-        int price = ShoppingModel->data(ix.siblingAtColumn(5)).toInt();                 //총 구매 가격 변수 선언
-        Shopping* item = new Shopping(id, clientname, productname, date, quan, price);
-        ui->SearchTreeWidget->addTopLevelItem(item);
+    foreach(auto ix, indexs){
+        int id = ShoppingModel->data(ix.siblingAtColumn(0)).toInt(); //해당되는 열을 출력(id에 해당하는 모든 정보)
+        QString clientname = ShoppingModel->data(ix.siblingAtColumn(1)).toString(); //clientname에 해당되는 열을 출력
+        QString productname = ShoppingModel->data(ix.siblingAtColumn(2)).toString();//productname에 해당되는 열을 출력
+        QString date= ShoppingModel->data(ix.siblingAtColumn(3)).toString(); //date에 해당되는 열을 출력
+        int quan = ShoppingModel->data(ix.siblingAtColumn(4)).toInt();      //quan에 해당되는 열을 출력
+        int allprice = ShoppingModel->data(ix.siblingAtColumn(5)).toInt();  //allprice에 해당되는 열을 출력
+        QStringList strings;
+        strings << QString::number(id) << clientname << productname
+                << date << QString::number(quan) << QString::number(allprice);          //검색된 행에 아이디, 이름, 전화번호, 이메일을 strings에 순서대로 저장
+
+        QList<QStandardItem *> items;                                       /*QStandardItme을 상속한 리스트 아이템 변수를 선언*/
+        for(int i = 0; i < 6; i++){
+            items.append(new QStandardItem(strings.at(i)));                 /*4번째 컬럼까지 데이터를 append*/
+        }
+
+        SearchModel->appendRow(items);                                      /*1개의 행 내용을 전부 출력*/
+        SearchModel->setHeaderData(0, Qt::Horizontal, tr("ID"));            /*1번째 column 이름을 ID*/
+        SearchModel->setHeaderData(1, Qt::Horizontal, tr("ClientName"));    /*2번째 column 이름을 ClientName*/
+        SearchModel->setHeaderData(2, Qt::Horizontal, tr("ProductName"));  /*3번째 column 이름을 ProductNumber*/
+        SearchModel->setHeaderData(3, Qt::Horizontal, tr("Date"));         /*4번째 column 이름을 Date로 설정*/
+        SearchModel->setHeaderData(4, Qt::Horizontal, tr("Quan"));          /*5번째 column 이름을 Quan으로 설정*/
+        SearchModel->setHeaderData(5, Qt::Horizontal, tr("AllPrice"));     /*6번째 column 이름을 AllPrice로 설정*/
+
+        ui->TBSearchView->resizeColumnsToContents();                     /*입력된 데이터의 크기 만큼 컬럼을 조정*/
     }
 }
-
-
-void ShoppingManager::on_SDateLineEdit_returnPressed()          /*엔터키를 입력시 자동으로 금일 날짜를 호출하는 함수*/
-{
-    //QDateTimeEdit* datetimeedit = new QDateTimeEdit(QDate::currentDate(), 0);   /*현재 날짜를 yyyy-mm-dd형태의 라인에디트로 선언*/
-    //datetimeedit->setCalendarPopup(true);
-    //ui->SDateLineEdit->setText(datetimeedit->text());       /*텍스트 형태의 데이터를 날짜 입력 라인에디터에 호출*/
-}
-
 
 void ShoppingManager::on_tableView_clicked(const QModelIndex &index) //테이블 뷰 클릭 함수
 {
@@ -247,4 +263,3 @@ void ShoppingManager::on_RecentButton_clicked()
         //ClientModel->select();
     }
 }
-

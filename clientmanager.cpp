@@ -1,6 +1,5 @@
 #include "clientmanager.h"
 #include "ui_clientmanager.h"
-#include "client.h"
 
 #include <QFile>
 #include <QMenu>
@@ -12,6 +11,7 @@
 #include <QSqlQueryModel>
 #include <QSqlTableModel>
 #include <QSqlRelationalTableModel>
+#include <QStandardItemModel>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
@@ -42,6 +42,13 @@ ClientManager::ClientManager(QWidget *parent) :
     ui->CPhoneLineEdit->setCursorPosition(1);       /*전화번호 자동라인 맞춤*/
 
     //connect(this, SIGNAL(TCPClientAdded(int,QString)), this, SLOT(loadData()));
+
+    SearchModel = new QStandardItemModel(0, 4);                         /*행렬중 row = 0, column = 4로 초기화*/
+    SearchModel->setHeaderData(0, Qt::Horizontal, tr("ID"));            /*1번째 column 이름을 ID*/
+    SearchModel->setHeaderData(1, Qt::Horizontal, tr("Name"));          /*2번째 column 이름을 Name*/
+    SearchModel->setHeaderData(2, Qt::Horizontal, tr("Phone Number"));  /*3번째 column 이름을 Phone Number*/
+    SearchModel->setHeaderData(3, Qt::Horizontal, tr("Email"));         /*4번째 column 이름을 Email로 설정*/
+    ui->searchTableView->setModel(SearchModel);                         /*테이블 뷰 위젯에 SearchModel 추가*/
 }
 
 void ClientManager::loadData()                  /*고객의 정보를 택스트로 저장*/
@@ -56,11 +63,14 @@ void ClientManager::loadData()                  /*고객의 정보를 택스트�
     if (db.open()) {
         clientquery = new QSqlQuery(db);
         ClientModel = new QSqlTableModel(this, db);
+        //SearchModel = new QSqlTableModel(this, db);     /*검색용 테이븧 모델 추가*/
 
         ClientModel->setTable("CUST");
+
         clientquery->exec("SELECT * FROM CUST ORDER BY C_ID ASC");
         ClientModel->select();
 
+        //SearchModel->setTable("SEARCH_CUST");
 
         /*고객 데이터베이스 출력 쿼리문*/
         ClientModel->setHeaderData(0, Qt::Horizontal, QObject::tr("c_id"));
@@ -68,7 +78,9 @@ void ClientManager::loadData()                  /*고객의 정보를 택스트�
         ClientModel->setHeaderData(2, Qt::Horizontal, QObject::tr("c_phone"));
         ClientModel->setHeaderData(3, Qt::Horizontal, QObject::tr("c_email"));
 
+
         ui->tableView->setModel(ClientModel);
+        ui->tableView->resizeColumnsToContents();
     }
     for(int i = 0; i < ClientModel->rowCount(); i++){                       /*로우 카운트를 이용하여 데이터를 가지고 오는 함수*/
         int id = ClientModel->data(ClientModel->index(i, 0)).toInt();       /*로우와 컬럼 값으로 아이디와 이름 할당*/
@@ -80,9 +92,7 @@ void ClientManager::loadData()                  /*고객의 정보를 택스트�
 ClientManager::~ClientManager()
 {
     delete ui;
-    //delete[] pnum;
-    //free(pnum);
-    //QSqlDatabase db = ClientModel->database();  /*db는 현재 가지고 있는 데이터 베이스*/
+
     QSqlDatabase db = QSqlDatabase::database("clientConnection");
     if(db.isOpen())                     /*데이터 베이스가 열려있다면*/
     {
@@ -92,7 +102,7 @@ ClientManager::~ClientManager()
 
         db.close();
         //db.removeDatabase("QODBC");     /*할당되어 있는 QODBC를 제거*/
-        QSqlDatabase::removeDatabase("clientConnection");
+        QSqlDatabase::removeDatabase("clientConnection");   /*해당된 이름의 데이터베이스를 제거*/
     }
 }
 
@@ -119,6 +129,7 @@ void ClientManager::removeItem()                /*아이템을 제거하는 함�
         ClientModel->select();      /*해당 테이블 호출*/
         //ui->tableView->setModel(ClientModel);   /*테이블 모델 셋*/
         ui->tableView->update();
+        ui->tableView->resizeColumnsToContents();       /*데이터 사이즈에 맞게 열을 정렬*/
         emit ClientRemove(idx);     /*서버 대기방에 없는 이름의 클라이언트는 삭제하는 시그널*/
     }
 
@@ -152,6 +163,7 @@ void ClientManager::on_InputButton_clicked()        /*input버튼 클릭 시 발
         ClientModel->select();                          /*릴레이션 테이블 호출*/
 
         ui->tableView->setModel(ClientModel);           /*테이븛 뷰에 띄우가*/
+        ui->tableView->resizeColumnsToContents();       /*데이터 사이즈에 맞게 열을 정렬*/
 #else
 
         /*데이터를 입력하기 전에 최근 데이터를 클릭하고 데이터를 입력 해야지 새롭게 데이터가 입력된다*/
@@ -207,35 +219,44 @@ void ClientManager::on_ModifyButton_clicked()           /*고객 관리 데이�
 }
 
 
-void ClientManager::on_SearchButton_clicked()
+void ClientManager::on_TBpushButton_clicked()
 {
-    ui->ClientSearchTree->clear();                      /*검색 리스트를 클리어*/
-    int combo = ui->SearchComboBox->currentIndex();         /*검색 리스트의 인덱스를 할당*/
-    auto flag = (combo)? Qt::MatchCaseSensitive|Qt::MatchContains      /*매칭의 조건 옵션 추가*/
-                       : Qt::MatchCaseSensitive;            /*Qt::MatchCaseSensitive : 대소문자 구분*/
+    SearchModel->clear();                                          /*SearhModel 초기화*/
+    int i = ui->SearchComboBox->currentIndex();                    /*콤보박스에 해당하는 인덱스 변수 선언*/
+    auto flag = (i) ? Qt::MatchCaseSensitive|Qt::MatchContains     /*검색 플래그 매칭 조건*/
+                    : Qt::MatchCaseSensitive;
+    QModelIndexList indexs = ClientModel->match(ClientModel->index(0, i),   /*match() 파라미터에 따른 검색 리스트 인덱스 나열*/
+             Qt::EditRole, ui->SearchLineEdit->text(), -1, Qt::MatchFlags(flag));
 
-    QModelIndexList indexes = ClientModel->match(ClientModel->index(0, combo),      /*고객 데이터 베이스의 인덱스 값을 할당*/
-                                                 Qt::EditRole,                      /*ItemEditRole의 2번째 타입*/
-                                                 ui->SearchLineEdit->text(),        /*검색 에디트의 텍스트 비교*/
-                                                 -1,                            /*flag타입을 -1로 설정 : If you want to search for all matching items, use hits = -1*/
-                                                 Qt::MatchFlags(flag));         /*상단의 flag 변수로 매칭*/
-
-    foreach(auto ix, indexes) { /*인덱스값을 처음부터 끝까지 나열*/
-        //ui->ClientSearchTree->clear();
+    foreach(auto ix, indexs){
         int id = ClientModel->data(ix.siblingAtColumn(0)).toInt(); //해당되는 열을 출력(id에 해당하는 모든 정보)
         QString name = ClientModel->data(ix.siblingAtColumn(1)).toString(); //name에 해당되는 열을 출력
         QString number = ClientModel->data(ix.siblingAtColumn(2)).toString(); //number에 해당되는 열을 출력
-        QString address = ClientModel->data(ix.siblingAtColumn(3)).toString(); //address에 해당되는 열을 출력
-        Client* item = new Client(id, name, number, address);
-        ui->ClientSearchTree->addTopLevelItem(item);
+        QString email = ClientModel->data(ix.siblingAtColumn(3)).toString(); //address에 해당되는 열을 출력
+        QStringList strings;
+        strings << QString::number(id) << name << number << email;          //검색된 행에 아이디, 이름, 전화번호, 이메일을 strings에 순서대로 저장
+
+        QList<QStandardItem *> items;                                       /*QStandardItme을 상속한 리스트 아이템 변수를 선언*/
+        for(int i = 0; i < 4; i++){
+            items.append(new QStandardItem(strings.at(i)));                 /*4번째 컬럼까지 데이터를 append*/
+        }
+
+        SearchModel->appendRow(items);                                      /*1개의 행 내용을 전부 출력*/
+        SearchModel->setHeaderData(0, Qt::Horizontal, tr("ID"));
+        SearchModel->setHeaderData(1, Qt::Horizontal, tr("Name"));
+        SearchModel->setHeaderData(2, Qt::Horizontal, tr("Phone Number"));
+        SearchModel->setHeaderData(3, Qt::Horizontal, tr("Email"));
+
+
+        ui->searchTableView->resizeColumnsToContents();                     /*입력된 데이터의 크기 만큼 컬럼을 조정*/
     }
 }
 
-/*검색 리스트의 해당 아이템을 클릭 하면 고객의 성함을 에디터에 연결*/
-void ClientManager::on_ClientSearchTree_itemClicked(QTreeWidgetItem *item, int column)
+/*테이블 뷰 검색 리스트의 해당 아이템을 클릭하면 고객의 성함을 에디터에 연결*/
+void ClientManager::on_searchTableView_clicked(const QModelIndex &index)
 {
-    Q_UNUSED(column);
-    ui->CNameLineEdit->setText(item->text(1));
+    QString name = index.sibling(index.row(), 1).data().toString();
+    ui->CNameLineEdit->setText(name);
 }
 
 
@@ -291,11 +312,6 @@ void ClientManager::on_removeButton_clicked()       /*해당하는 고객의 아
 
 }
 
-//void ClientManager::acceptClientInfo(int key)
-//{
-
-//}
-
 
 void ClientManager::on_tableView_clicked(const QModelIndex& index)  /*테이블 뷰 클릭 시 해당되는 데이터들을 에디터에 호출*/
 {
@@ -316,4 +332,5 @@ void ClientManager::on_tableView_clicked(const QModelIndex& index)  /*테이블 
 
     ui->toolBox->setCurrentIndex(0);
 }
+
 

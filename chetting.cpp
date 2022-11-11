@@ -17,6 +17,15 @@
 #include <QFileDialog>
 #include <QTcpServer>
 
+/*Oracle SQL 연동을 위한 헤더*/
+#include <QSqlQueryModel>
+#include <QSqlTableModel>
+#include <QSqlRelationalTableModel>
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QSqlError>
+#include <QSqlRecord>
+
 #define BLOCK_SIZE 1024
 
 Chetting::Chetting(QWidget *parent) :

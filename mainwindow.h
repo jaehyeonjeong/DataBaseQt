@@ -35,8 +35,6 @@ private slots:
 
     void on_actionmanager_triggered();      //ui에서 생성된 매니저 클라이언트를 불러오는 툴바 버튼 이벤트 핸들러
 
-    int on_actionshoppingDB_triggered();
-
 private:
     Ui::MainWindow *ui;         //ui변수
     ClientManager* clientmanager;   //고객관리 클래스 변수
@@ -49,9 +47,5 @@ private:
 
     QMdiSubWindow* subWindow;   //MDI에서 구매정보를 불러오는 서브 윈도우 클래스 변수
     QMdiSubWindow* TcpSubWindow[2]; //MDI에서 2개 더 추가할 서브윈도우 클래스 변수
-
-    QSqlQueryModel* queryModel; /*쿼리문 모델 변수*/
-    QTableView *tableview;      /*테이블을 보여주는 클래스*/
-    int flag = 1000;
 };
 #endif // MAINWINDOW_H

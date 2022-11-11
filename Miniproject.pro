@@ -10,27 +10,21 @@ CONFIG += c++17
 
 SOURCES += \
     chetting.cpp \
-    client.cpp \
     clientmanager.cpp \
     logthread.cpp \
     main.cpp \
     mainwindow.cpp \
-    product.cpp \
     productmanager.cpp \
-    shopping.cpp \
     shoppingmanager.cpp \
     tcpclient.cpp \
     tcpserver.cpp
 
 HEADERS += \
     chetting.h \
-    client.h \
     clientmanager.h \
     logthread.h \
     mainwindow.h \
-    product.h \
     productmanager.h \
-    shopping.h \
     shoppingmanager.h \
     tcpclient.h \
     tcpserver.h

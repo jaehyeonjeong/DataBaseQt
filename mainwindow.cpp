@@ -116,14 +116,6 @@ MainWindow::MainWindow(QWidget *parent)
     /*관리자 클라이언트에서 연결하는 요소는 반드시 생성자에 작성*/
     connect(chettingapp, SIGNAL(TCPSignal(int, QString)),
             tcpserver, SLOT(receiveManager(int, QString)));
-
-    /*메인 윈도우에 있는 메뉴바에 테이블을 불러오면 메인윈도우 창닫기 버튼 비활성화*/
-    tableview = new QTableView;
-    if(tableview->isActiveWindow() != false)
-    {
-        /*여기서 어떻게 하면 테이블을 불러올 때마다 창닫기를 비활성화 시킬 수 있을까?*/
-        this->setWindowFlags(Qt::WindowTitleHint | Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
-    }
 }
 
 MainWindow::~MainWindow()
@@ -161,31 +153,4 @@ void MainWindow::on_actionmanager_triggered()
     chettingapp->show();
 }
 
-
-int MainWindow::on_actionshoppingDB_triggered()
-{
-    if (!createConnection( )) return 1;
-
-    queryModel = new QSqlQueryModel;
-    queryModel->setQuery("select o_id, c_name, g_name, o_date, o_quan, o_allprice from ORDERS order by o_id asc");    /*상품 데이터베이스 출력 쿼리문*/
-    queryModel->setHeaderData(0, Qt::Horizontal, QObject::tr("o_id"));
-    queryModel->setHeaderData(1, Qt::Horizontal, QObject::tr("c_name"));
-    queryModel->setHeaderData(2, Qt::Horizontal, QObject::tr("g_name"));
-    queryModel->setHeaderData(3, Qt::Horizontal, QObject::tr("o_date"));
-    queryModel->setHeaderData(4, Qt::Horizontal, QObject::tr("o_quan"));
-    queryModel->setHeaderData(5, Qt::Horizontal, QObject::tr("o_allprice"));
-
-
-    //tableview = new QTableView;
-    tableview->setModel(queryModel);
-    tableview->setWindowTitle(QObject::tr("Shopping DataBase"));
-    tableview->show( );
-    flag = 3;
-    qDebug() << flag;
-    if(!isActiveWindow())
-    {
-        flag = 1000;
-        qDebug() << flag;
-    }
-}
 
