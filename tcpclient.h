@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QDataStream>
 
+
 class QTextEdit;
 class QLineEdit;
 class QTcpSocket;
@@ -12,6 +13,10 @@ class QFile;
 class QLabel;
 class QPixmap;
 class QProgressDialog;
+class clientThread;
+class QSqlTableModel;
+class QSqlQuery;
+class QTreeWidget;
 
 typedef enum {
     Client_Chat_Login,             // 로그인(서버 접속)   --> 초대를 위한 정보 저장
@@ -86,5 +91,14 @@ private:
 
     QPushButton* imageButton;
     QLabel* IbView;
+
+    /*QTreeWidget widget varient*/
+    QTreeWidget* treeWidget;
+
+    /*clientThread Varient*/
+    clientThread* clientTh;
+
+    QSqlTableModel* ClientModel;
+    QSqlQuery* clientquery;
 };
 #endif // WIDGET_H

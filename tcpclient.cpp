@@ -1,4 +1,5 @@
 ﻿#include "tcpclient.h"
+#include "clientthread.h"
 
 #include <QTextEdit>
 #include <QLineEdit>
@@ -19,6 +20,9 @@
 #include <QPixmap>
 #include <QLabel>
 #include <QProgressDialog>
+#include <QTreeWidget>
+
+
 
 #define BLOCK_SIZE      1024
 
@@ -65,6 +69,9 @@ TCPClient::TCPClient(QWidget *parent) : QWidget(parent), isSent(false) {
 
     message = new QTextEdit(this);		// 서버에서 오는 메시지 표시용
     message->setReadOnly(true);         // 채팅 텍스트 창은 오로지 읽기만 수행
+
+    treeWidget = new QTreeWidget(this);
+    treeWidget->hide();
 
     fileText = new QTextEdit(this);     // 파일 형태로 읽을 수 있는 텍스트 에디터 생성
     fileText->setReadOnly(true);        // 채팅 텍스트와 마찬가지로 읽기만 수행
@@ -139,6 +146,7 @@ TCPClient::TCPClient(QWidget *parent) : QWidget(parent), isSent(false) {
     QHBoxLayout *textlayout = new QHBoxLayout;      /*두 개의 텍스트에디터를 레이아웃*/
     textlayout->addWidget(message);
     textlayout->addWidget(fileText);
+    textlayout->addWidget(treeWidget);
 
     QVBoxLayout *imagelayout = new QVBoxLayout;     /*메세지와 로그를 레이아웃 한 변수와 레이블을 더하는 코드*/
     imagelayout->addLayout(textlayout);
@@ -188,6 +196,8 @@ TCPClient::TCPClient(QWidget *parent) : QWidget(parent), isSent(false) {
             sendProtocol(Client_Chat_Login, name->text().toStdString().data()); /*로그인 타입으로 전환*/
             connectButton->setText(tr("Chat in"));                  /*채팅이 가능한 상태의 버튼 이름 변경*/
             name->setReadOnly(true);                                /*성함에디터의 이름이 수정되지 않도록 항상 읽기로 표시*/
+//            clientquery->exec(QString("CALL INSERT_CLINET('%1', '%2', 'connect')")
+//                              .arg(name->text()).arg(serverAddress->text()));
         } else if(connectButton->text() == tr("Chat in"))  {        /*버튼의 텍스트가 Chat in 상태라면*/
             sendProtocol(Client_Chat_In, name->text().toStdString().data());    /*채팅중 타입으로 전환*/
             connectButton->setText(tr("Chat Out"));                 /*채팅을 나갈 수 있는 상태의 버튼 이름 변경*/
@@ -209,6 +219,26 @@ TCPClient::TCPClient(QWidget *parent) : QWidget(parent), isSent(false) {
 
     setWindowTitle(tr("Chat Client"));          /*고객용 채팅 방 윈도우 타이틀*/
 
+    /*데이터 베이스의 데이터들을 불러오기*/
+    //QSqlDatabase db = QSqlDatabase::addDatabase("QODBC", "ClientConnect");
+    /*추가하려는 데이터베이스 종류는 QODBC(Qt Oracle DataBase)*/
+    //db.setDatabaseName("Oracle11g");            /*데이터베이스 이름*/
+    //db.setUserName("projectDB");                /*데이터 베이스 계정 명*/
+    //db.setPassword("1234");                     /*데이터 베이스 비밀번호*/
+
+    //if (db.open()) {
+    //    clientquery = new QSqlQuery(db);                /*데이터베이스의 쿼리문을 받을 수 있는 변수 정의*/
+    //    ClientModel = new QSqlTableModel(this, db);     /*Qt내의 SQL Model을 table model로 정의*/
+
+    //    ClientModel->setTable("CLIENT");
+    //}
+    clientTh = new clientThread(this);
+    clientTh->start();
+
+    connect(connectButton, SIGNAL(clicked()),
+            clientTh, SLOT(appendData(QTreeWidgetItem *)));
+
+
     this->resize(500, 400);
 }
 
@@ -217,6 +247,19 @@ TCPClient::~TCPClient( )
     clientSocket->close( );
     QSettings settings("ChatClient", "Chat Client");        /*마지막으로 적었던 이름이*/
     settings.setValue("ChatClient/ID", name->text());       /*프로그램이 종료되어도 clear 되지 않음*/
+
+//    QSqlDatabase db = QSqlDatabase::database("ClientConnect");
+//    if(db.isOpen())                     /*데이터 베이스가 열려있다면*/
+//    {
+//        ClientModel->submitAll();
+//        /*보류 중인 모든 변경 사항을 제출하고 성공하면 true를 반환합니다.
+//         * 오류 시 false를 반환하고 lastError()를 사용하여 자세한 오류 정보를 얻을 수 있습니다.*/
+
+//        db.close();
+//        QSqlDatabase::removeDatabase("ClientConnect");   /*해당된 이름의 데이터베이스를 제거*/
+//    }
+
+    clientTh->terminate();
 }
 
 /*현재 파일을 받는 슬롯은 아직 파일의 이름과 형태만 다이얼로그에서 가져다 텍스트 에디트에서 텍스트로 붙임*/
@@ -287,6 +330,20 @@ void TCPClient::receiveData( )      /*또 다른 채팅 클라이언트로 부�
             connectButton->setEnabled(true);
             findFileButton->setEnabled(true);
             imageButton->setEnabled(true);
+
+//            QTreeWidgetItem* item = new QTreeWidgetItem(treeWidget);
+//            item->setText(0, name->text());
+//            item->setText(1, serverAddress->text());
+//            item->setText(2, serverPort->text());
+//            item->setText(3, QDateTime::currentDateTime().toString());
+
+//            treeWidget->setColumnCount(4);
+
+//            for(int i = 0; i < treeWidget->columnCount(); i++)
+//                treeWidget->resizeColumnToContents(i);
+//            treeWidget->addTopLevelItem(item);
+
+//            clientTh->appendData(item);
         }
         else    /*한번 강퇴 되면 플래그가 1로 변경되어서 입력문에 채팅을 할 수 없게 됨*/
         {
@@ -340,6 +397,10 @@ void TCPClient::disconnect( )
     findFileButton->setEnabled(false);
     imageButton->setEnabled(false);
     connectButton->setText(tr("Log in"));
+
+
+//    clientquery->exec(QString("CALL INSERT_CLINET('%1', '%2', 'disconnect')")
+//                      .arg(name->text()).arg(serverAddress->text()));
 }
 
 void TCPClient::sendProtocol(Client_Chat type, char* data, int size)
@@ -367,6 +428,23 @@ void TCPClient::sendData(  )            /*데이터를 보내는 함수*/
         message->append("<font color=red>나</font> : " + str); //클라이언ㅌ트
         sendProtocol(Client_Chat_Talk, bytearray.data());
     }
+
+    QTreeWidgetItem* item = new QTreeWidgetItem(treeWidget);
+    item->setText(0, name->text());
+    item->setText(1, serverAddress->text());
+    item->setText(2, serverPort->text());
+    item->setText(3, QDateTime::currentDateTime().toString());
+
+    treeWidget->setColumnCount(4);
+//    treeWidget->setItemWidget(item, 0, name);
+//    treeWidget->setItemWidget(item, 1, serverAddress);
+//    treeWidget->setItemWidget(item, 2, serverPort);
+
+    for(int i = 0; i < treeWidget->columnCount(); i++)
+        treeWidget->resizeColumnToContents(i);
+    treeWidget->addTopLevelItem(item);
+
+    clientTh->appendData(item);
 }
 
 void TCPClient::goOnSend(qint64 numBytes) // 파일 내용 보내기 시작

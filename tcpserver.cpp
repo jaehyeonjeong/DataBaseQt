@@ -1,4 +1,4 @@
-#include "tcpserver.h".h"
+#include "tcpserver.h"
 #include "chetting.h"
 #include "ui_tcplog.h"
 #include "logthread.h"

@@ -11,6 +11,7 @@ CONFIG += c++17
 SOURCES += \
     chetting.cpp \
     clientmanager.cpp \
+    clientthread.cpp \
     logthread.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -22,6 +23,7 @@ SOURCES += \
 HEADERS += \
     chetting.h \
     clientmanager.h \
+    clientthread.h \
     logthread.h \
     mainwindow.h \
     productmanager.h \

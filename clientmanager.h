@@ -1,6 +1,7 @@
 #ifndef CLIENTMANAGER_H
 #define CLIENTMANAGER_H
 
+#include "qabstractitemmodel.h"
 #include <QWidget>
 
 class Client;                       /*client 정보를 가져오기 위해 Client class*/
@@ -10,14 +11,16 @@ class QSqlTableModel;               /*QSqlTableModel을 가져오기 위한 clas
 class QSqlQueryModel;
 class QSqlRelationalTableModel;
 class QStandardItemModel;
+class QAbstractListModel;
 class QSqlQuery;
 class QModalIndex;
+class QStandardItem;
 
 namespace Ui {
 class ClientManager;                /*ClientManager ui를 할당받는 클래스*/
 }
 
-class ClientManager : public QWidget
+class ClientManager : public QWidget/*, public QAbstractListModel*/
 {
     Q_OBJECT
 
@@ -27,6 +30,8 @@ public:
    // QString getClientName();
     void loadData();
 
+//    int rowCount(const QModelIndex& parent) const;
+//    QVariant data(const QModelIndex& index, int role) const;
 
 signals:
     void ClientAdded(QString);              /*고객의 이름정보를 구매정보 에디터에 갱신*/
@@ -57,6 +62,8 @@ private:
     QSqlQuery* clientquery;
 
     QStandardItemModel* SearchModel;                    /*검색을 하기위한 모델 변수 선언*/
+
+//    QList<QStandardItem *> items;
 };
 
 #endif // CLIENTMANAGER_H

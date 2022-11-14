@@ -89,13 +89,6 @@ private:
     QHash<QString, int> clientIDHash;   /*클라이언트 ID를 받는 해시 데이터*/
     QMenu* menu;        /*마우스 우클릭시 생성되는 메뉴창*/
 
-    //    QList<QTcpSocket*> clientList;  /*같음*/
-//    QHash<QString, int> oldClientIDList;
-//    QHash<QString, QString> oldClientNameHash;
-    //        QHash<QString, int> clientIDHash;
-
-    /*아이디만 보이게끔만 설정*/
-
     /*1019 강사님께서 추가해주신 코드*/
     QFile* file;                /*파일 생성 변수*/
     QProgressDialog* progressDialog;    /*프로그래스바 */

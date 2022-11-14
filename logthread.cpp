@@ -1,4 +1,4 @@
-#include "logthread.h""
+#include "logthread.h"
 
 #include <QTreeWidgetItem>
 #include <QFile>

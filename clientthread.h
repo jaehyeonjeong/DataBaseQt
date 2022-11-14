@@ -1,16 +1,17 @@
-#ifndef LOGTHREAD_H
-#define LOGTHREAD_H
+#ifndef CLIENTTHREAD_H
+#define CLIENTTHREAD_H
 
 #include <QList>
 #include <QThread>
 
+
 class QTreeWidgetItem;
 
-class LogThread : public QThread    //QThread 상속
+class clientThread : public QThread //QThread 상속
 {
     Q_OBJECT
 public:
-    explicit LogThread(QObject *parent = nullptr); //생성자 초기화
+    explicit clientThread(QObject *parent = nullptr); //생성자 초기화
 
 signals:
     void send(int data);   //응답을 기다리지 않고 이 연결을 통해
@@ -26,8 +27,12 @@ public slots:
 private:
     void run();  //지정된 <arguments>를 사용하여 지
     //정된 제품의 실행 파일을 실행합니다. (시스템 함수)
+    QString filename;
 
-    QList<QTreeWidgetItem*> itemList;
+    QList<QTreeWidgetItem*> clientList;
 };
 
-#endif // LOGTHREAD_H
+
+#endif // CLIENTTHREAD_H
+
+

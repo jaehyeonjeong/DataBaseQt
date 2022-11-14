@@ -12,6 +12,7 @@
 #include <QSqlTableModel>
 #include <QSqlRelationalTableModel>
 #include <QStandardItemModel>
+#include <QAbstractItemModel>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
@@ -61,9 +62,8 @@ void ClientManager::loadData()                  /*고객의 정보를 택스트�
     db.setPassword("1234");                     /*데이터 베이스 비밀번호*/
 
     if (db.open()) {
-        clientquery = new QSqlQuery(db);
-        ClientModel = new QSqlTableModel(this, db);
-        //SearchModel = new QSqlTableModel(this, db);     /*검색용 테이븧 모델 추가*/
+        clientquery = new QSqlQuery(db);                /*데이터베이스의 쿼리문을 받을 수 있는 변수 정의*/
+        ClientModel = new QSqlTableModel(this, db);     /*Qt내의 SQL Model을 table model로 정의*/
 
         ClientModel->setTable("CUST");
 
@@ -78,9 +78,11 @@ void ClientManager::loadData()                  /*고객의 정보를 택스트�
         ClientModel->setHeaderData(2, Qt::Horizontal, QObject::tr("c_phone"));
         ClientModel->setHeaderData(3, Qt::Horizontal, QObject::tr("c_email"));
 
+        clientquery->exec("SELECT * FROM CUST ORDER BY C_ID");
 
         ui->tableView->setModel(ClientModel);
         ui->tableView->resizeColumnsToContents();
+
     }
     for(int i = 0; i < ClientModel->rowCount(); i++){                       /*로우 카운트를 이용하여 데이터를 가지고 오는 함수*/
         int id = ClientModel->data(ClientModel->index(i, 0)).toInt();       /*로우와 컬럼 값으로 아이디와 이름 할당*/
@@ -218,7 +220,6 @@ void ClientManager::on_ModifyButton_clicked()           /*고객 관리 데이�
     }
 }
 
-
 void ClientManager::on_TBpushButton_clicked()
 {
     SearchModel->clear();                                          /*SearhModel 초기화*/
@@ -229,14 +230,17 @@ void ClientManager::on_TBpushButton_clicked()
              Qt::EditRole, ui->SearchLineEdit->text(), -1, Qt::MatchFlags(flag));
 
     foreach(auto ix, indexs){
-        int id = ClientModel->data(ix.siblingAtColumn(0)).toInt(); //해당되는 열을 출력(id에 해당하는 모든 정보)
+        int id = ClientModel->data(ix.siblingAtColumn(0)).toInt();          //해당되는 열을 출력(id에 해당하는 모든 정보)
         QString name = ClientModel->data(ix.siblingAtColumn(1)).toString(); //name에 해당되는 열을 출력
         QString number = ClientModel->data(ix.siblingAtColumn(2)).toString(); //number에 해당되는 열을 출력
         QString email = ClientModel->data(ix.siblingAtColumn(3)).toString(); //address에 해당되는 열을 출력
         QStringList strings;
         strings << QString::number(id) << name << number << email;          //검색된 행에 아이디, 이름, 전화번호, 이메일을 strings에 순서대로 저장
 
-        QList<QStandardItem *> items;                                       /*QStandardItme을 상속한 리스트 아이템 변수를 선언*/
+        //QAbstractListModel* AbItem;
+
+        QList<QStandardItem *>items;
+        /*QStandardItme을 상속한 리스트 아이템 변수를 선언*/
         for(int i = 0; i < 4; i++){
             items.append(new QStandardItem(strings.at(i)));                 /*4번째 컬럼까지 데이터를 append*/
         }
